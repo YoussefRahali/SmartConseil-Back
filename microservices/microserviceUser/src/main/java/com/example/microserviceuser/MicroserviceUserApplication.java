@@ -1,4 +1,4 @@
-package tn.esprit.microserviceuser;
+package com.example.microserviceuser;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
