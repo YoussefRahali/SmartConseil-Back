@@ -20,9 +20,18 @@ public class JwtUtils {
     private static final long EXPIRATION_TIME = 86400000; // 24 heures (en millisecondes)
 
     // Génération du token avec rôle
-    public static String generateToken(String username, String role) {
+//    public static String generateToken(String username, String role) {
+//        return Jwts.builder()
+//                //.setSubject(username)  // Ajoute l'username dans le JWT
+//                .claim("role", role)   // Ajoute le rôle dans le JWT
+//                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))  // Expiration dans 24 heures
+//                .signWith(KEY)  // Signature avec la clé secrète
+//                .compact();  // Génère le token compact
+//    }
+
+    public static String generateToken(String email, String role) {
         return Jwts.builder()
-                .setSubject(username)  // Ajoute l'username dans le JWT
+                //.setSubject(email)  // Ajoute l'username dans le JWT
                 .claim("role", role)   // Ajoute le rôle dans le JWT
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))  // Expiration dans 24 heures
                 .signWith(KEY)  // Signature avec la clé secrète

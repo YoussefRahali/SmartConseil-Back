@@ -122,7 +122,8 @@ public class AuthController {
         // Récupérer le rôle de l'utilisateur depuis la base de données
         String role = userService.getUserRoleByUsername(user.getEmail());
         String username = userService.getUserusername(user.getEmail());
-        String token = JwtUtils.generateToken(username, role);
+        //String token = JwtUtils.generateToken(username, role);
+        String token = JwtUtils.generateToken(user.getEmail(), role); // ✅ PAS username ici
 
         // ➕ Injecter dans le contexte Spring Security
         Authentication authentication = new UsernamePasswordAuthenticationToken(

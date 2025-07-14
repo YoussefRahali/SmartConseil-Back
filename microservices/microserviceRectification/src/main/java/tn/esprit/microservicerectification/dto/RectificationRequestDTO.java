@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class RectificationRequestDTO {
+    private String etudiantPrenom;
     private String etudiantNom;
     private String classe;
     private String option;

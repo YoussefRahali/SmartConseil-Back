@@ -1,0 +1,13 @@
+package tn.esprit.microservicerapport.dto;
+
+import lombok.Data;
+
+@Data
+public class RapportUpdateDTO {
+    private String titre;
+    private String contenu;
+    private String classe;
+    private String secteur;
+    private String anneeAcademique;
+    private String semestre;
+}

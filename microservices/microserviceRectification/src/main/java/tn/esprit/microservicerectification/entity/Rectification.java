@@ -15,7 +15,10 @@ public class Rectification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Student information - separate first and last name as required
+    private String etudiantPrenom;
     private String etudiantNom;
+
     private String classe;
     private String option;
     private Double ancienneNote;
@@ -28,4 +31,13 @@ public class Rectification {
     private String chefDepartementUsername;
 
     private LocalDateTime dateDemande;
+    private LocalDateTime dateTraitement;
+
+    // SMS verification fields
+    private boolean smsVerified;
+    private String smsCode;
+    private LocalDateTime smsCodeExpiry;
+
+    // Additional tracking fields
+    private String motifRefus; // Reason for rejection if status is REFUSEE
 }
