@@ -70,4 +70,15 @@ public class UserController {
         List<User> users = userRepository.findByRole(role);
         return ResponseEntity.ok(users);
     }
+
+    // Endpoint pour trouver le chef de département par secteur
+    @GetMapping("/chef-by-sector/{sector}")
+    public ResponseEntity<String> getChefBySector(@PathVariable String sector) {
+        User chef = userRepository.findByRoleAndSecteur("chef departement", sector);
+        if (chef != null) {
+            return ResponseEntity.ok(chef.getEmail());
+        }
+        // Return default chef if no specific chef found for the sector
+        return ResponseEntity.ok("chef@test.com");
+    }
 }

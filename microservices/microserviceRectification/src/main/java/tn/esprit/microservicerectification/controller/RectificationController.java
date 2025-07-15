@@ -3,6 +3,8 @@ package tn.esprit.microservicerectification.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import tn.esprit.microservicerectification.dto.*;
 import tn.esprit.microservicerectification.entity.Rectification;
 import tn.esprit.microservicerectification.service.RectificationService;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +29,7 @@ public class RectificationController {
      * Get all rectifications (admin only)
      */
     @GetMapping
-    @PreAuthorize("hasRole('CHEF DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT')")
     public List<RectificationResponseDTO> getAll() {
         return service.findAll();
     }
@@ -57,7 +61,7 @@ public class RectificationController {
     /**
      * Update rectification status (department heads only)
      */
-    @PreAuthorize("hasRole('CHEF DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT')")
     @PutMapping("/{id}/status")
     public ResponseEntity<Rectification> updateStatus(
             @PathVariable Long id,
@@ -79,7 +83,7 @@ public class RectificationController {
     /**
      * Get rectifications for department head to process
      */
-    @PreAuthorize("hasRole('CHEF DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT')")
     @GetMapping("/pending")
     public List<RectificationResponseDTO> getPendingRequests(Principal principal) {
         return service.findByChefDepartementUsername(principal.getName());
@@ -97,9 +101,59 @@ public class RectificationController {
     /**
      * Get department head's processed rectifications history
      */
-    @PreAuthorize("hasRole('CHEF DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT')")
     @GetMapping("/processed-history")
     public List<RectificationResponseDTO> getChefHistory(Principal principal) {
         return service.getChefHistory(principal.getName());
+    }
+
+    /**
+     * Test endpoint to debug authentication
+     */
+    @GetMapping("/test-auth")
+    public ResponseEntity<Map<String, Object>> testAuth(Principal principal) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("authenticated", principal != null);
+        response.put("username", principal != null ? principal.getName() : "null");
+
+        // Get current authentication
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        response.put("hasAuthentication", auth != null);
+        response.put("authName", auth != null ? auth.getName() : "null");
+        response.put("authorities", auth != null ? auth.getAuthorities().toString() : "null");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Test endpoint for enseignant role
+     */
+    @PreAuthorize("hasRole('ENSEIGNANT')")
+    @GetMapping("/test-enseignant")
+    public ResponseEntity<String> testEnseignant(Principal principal) {
+        return ResponseEntity.ok("Success! Enseignant role verified for: " + principal.getName());
+    }
+
+    /**
+     * Debug endpoint to see all rectifications with chef assignments
+     */
+    @GetMapping("/debug-all")
+    public ResponseEntity<List<Map<String, Object>>> debugAllRectifications() {
+        List<RectificationResponseDTO> allRectifications = service.findAll();
+        List<Map<String, Object>> debugInfo = new ArrayList<>();
+
+        for (RectificationResponseDTO r : allRectifications) {
+            Map<String, Object> info = new HashMap<>();
+            info.put("id", r.getId());
+            info.put("etudiant", r.getEtudiantPrenom() + " " + r.getEtudiantNom());
+            info.put("option", r.getOption());
+            info.put("enseignantUsername", r.getEnseignantUsername());
+            info.put("chefDepartementUsername", r.getChefDepartementUsername());
+            info.put("status", r.getStatus());
+            info.put("dateDemande", r.getDateDemande());
+            debugInfo.add(info);
+        }
+
+        return ResponseEntity.ok(debugInfo);
     }
 }

@@ -31,7 +31,7 @@ public class JwtUtils {
 
     public static String generateToken(String email, String role) {
         return Jwts.builder()
-                //.setSubject(email)  // Ajoute l'username dans le JWT
+                .setSubject(email)  // Ajoute l'email dans le JWT comme subject
                 .claim("role", role)   // Ajoute le rôle dans le JWT
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))  // Expiration dans 24 heures
                 .signWith(KEY)  // Signature avec la clé secrète

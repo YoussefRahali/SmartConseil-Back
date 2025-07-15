@@ -247,6 +247,52 @@ public class AuthController {
         }
     }
 
+    // Enhanced endpoint to create test users for all sectors
+    @PostMapping("/create-sector-test-users")
+    public ResponseEntity<Map<String, String>> createSectorTestUsers() {
+        try {
+            Map<String, String> response = new HashMap<>();
+            String[] sectors = {"Informatique", "Mathématique", "Telecommunication", "ML", "GC"};
+
+            for (String sector : sectors) {
+                // Create chef departement for each sector
+                String chefEmail = "chef." + sector.toLowerCase() + "@test.com";
+                if (userRepository.findByEmail(chefEmail) == null) {
+                    User chef = new User();
+                    chef.setUsername("Chef " + sector);
+                    chef.setEmail(chefEmail);
+                    chef.setPassword(passwordEncoder.encode("password123"));
+                    chef.setRole("chef departement");
+                    chef.setPoste("Chef de Département");
+                    chef.setSecteur(sector);
+                    userRepository.save(chef);
+                    response.put("chef_" + sector, "Created: " + chefEmail + " / password123");
+                }
+
+                // Create enseignant for each sector
+                String enseignantEmail = "enseignant." + sector.toLowerCase() + "@test.com";
+                if (userRepository.findByEmail(enseignantEmail) == null) {
+                    User enseignant = new User();
+                    enseignant.setUsername("Enseignant " + sector);
+                    enseignant.setEmail(enseignantEmail);
+                    enseignant.setPassword(passwordEncoder.encode("password123"));
+                    enseignant.setRole("enseignant");
+                    enseignant.setPoste("Professeur");
+                    enseignant.setSecteur(sector);
+                    userRepository.save(enseignant);
+                    response.put("enseignant_" + sector, "Created: " + enseignantEmail + " / password123");
+                }
+            }
+
+            response.put("message", "Sector test users created successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to create sector test users: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     // Debug endpoint to check user
     @GetMapping("/check-user/{email}")
     public ResponseEntity<Map<String, Object>> checkUser(@PathVariable String email) {

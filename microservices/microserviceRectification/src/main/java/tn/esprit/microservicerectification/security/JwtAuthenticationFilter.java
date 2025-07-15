@@ -24,18 +24,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String username = JwtUtils.extractUsername(jwtToken);
                 String role = JwtUtils.extractRole(jwtToken);
-                
+
+                System.out.println("JWT Debug - Username: " + username + ", Role: " + role);
+
                 if (username != null && JwtUtils.validateToken(jwtToken) && SecurityContextHolder.getContext().getAuthentication() == null) {
                     // Create authorities based on the role from JWT
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
-                    
+                    // Convert role to match @PreAuthorize expectations: "enseignant" -> "ROLE_ENSEIGNANT"
+                    String normalizedRole = role.toUpperCase().replace(" ", "_");
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + normalizedRole);
+
+                    System.out.println("JWT Debug - Creating authority: " + authority.getAuthority());
+
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             username, null, Collections.singletonList(authority));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    System.out.println("JWT Debug - Authentication set successfully for user: " + username);
                 }
             } catch (Exception e) {
                 // Log the error and continue without authentication
                 System.err.println("JWT processing error: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 

@@ -11,8 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+
 
 @Service
 @Slf4j
@@ -33,10 +32,12 @@ public class UserService {
     public String findChefDepartementByOption(String option) {
         try {
             String url = userServiceUrl + "/api/users/chef-by-sector/" + option;
+            log.info("Calling user service to find chef for sector: {}", option);
 
-            // In a real scenario, you would make an HTTP call to the user microservice
-            // For now, we'll use a mock implementation based on common sectors
-            return getChefDepartementMock(option);
+            String chefEmail = restTemplate.getForObject(url, String.class);
+            log.info("Found chef for sector {}: {}", option, chefEmail);
+
+            return chefEmail != null ? chefEmail : "chef@test.com";
 
         } catch (Exception e) {
             log.error("Error finding chef departement for option: {}", option, e);
@@ -62,20 +63,7 @@ public class UserService {
         }
     }
 
-    /**
-     * Mock implementation for finding chef departement by sector
-     * In production, this would query the user microservice
-     */
-    private String getChefDepartementMock(String option) {
-        Map<String, String> sectorToChef = new HashMap<>();
-        sectorToChef.put("Informatique", "chef@test.com");
-        sectorToChef.put("Mathématique", "chef@test.com");
-        sectorToChef.put("Telecommunication", "chef@test.com");
-        sectorToChef.put("ML", "chef@test.com");
-        sectorToChef.put("GC", "chef@test.com");
 
-        return sectorToChef.getOrDefault(option, "chef@test.com");
-    }
 
     /**
      * Make authenticated HTTP call to user microservice
