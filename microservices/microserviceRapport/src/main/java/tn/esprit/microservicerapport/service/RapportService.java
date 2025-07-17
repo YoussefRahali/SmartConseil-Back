@@ -28,6 +28,7 @@ public class RapportService {
         Rapport rapport = Rapport.builder()
                 .titre(dto.getTitre())
                 .contenu(dto.getContenu())
+                .option(dto.getOption()) // 🔽 ajouter ici
                 .classe(dto.getClasse())
                 .rapporteurUsername(rapporteurUsername)
                 .statut(StatutRapport.BROUILLON)
@@ -63,6 +64,7 @@ public class RapportService {
         // Update fields
         rapport.setTitre(dto.getTitre());
         rapport.setContenu(dto.getContenu());
+        rapport.setOption(dto.getOption());
         rapport.setClasse(dto.getClasse());
         rapport.setSecteur(dto.getSecteur());
         rapport.setAnneeAcademique(dto.getAnneeAcademique());
@@ -175,6 +177,7 @@ public class RapportService {
         dto.setId(rapport.getId());
         dto.setTitre(rapport.getTitre());
         dto.setContenu(rapport.getContenu());
+        dto.setOption(rapport.getOption());
         dto.setClasse(rapport.getClasse());
         dto.setRapporteurUsername(rapport.getRapporteurUsername());
         dto.setStatut(rapport.getStatut());

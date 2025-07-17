@@ -10,6 +10,7 @@ public class RapportResponseDTO {
     private Long id;
     private String titre;
     private String contenu;
+    private String option;
     private String classe;
     private String rapporteurUsername;
     private StatutRapport statut;

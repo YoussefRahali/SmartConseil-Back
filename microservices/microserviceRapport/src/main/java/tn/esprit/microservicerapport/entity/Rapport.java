@@ -23,6 +23,9 @@ public class Rapport {
     private String contenu;
 
     @Column(nullable = false)
+    private String option ;
+
+    @Column(nullable = false)
     private String classe;
 
     @Column(nullable = false)
