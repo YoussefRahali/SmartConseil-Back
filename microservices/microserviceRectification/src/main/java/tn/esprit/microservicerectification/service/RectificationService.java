@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -190,5 +192,52 @@ public class RectificationService {
         dto.setSmsVerified(rectification.isSmsVerified());
         dto.setMotifRefus(rectification.getMotifRefus());
         return dto;
+    }
+
+    /**
+     * Get rectification statistics for admin dashboard
+     */
+    public Map<String, Object> getRectificationStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Total rectifications
+        long totalRectifications = repo.count();
+        stats.put("totalRectifications", totalRectifications);
+
+        // Rectifications by status
+        Map<String, Long> rectificationsByStatus = new HashMap<>();
+        List<Rectification> allRectifications = repo.findAll();
+
+        rectificationsByStatus.put("EN_ATTENTE", allRectifications.stream()
+            .filter(r -> "EN_ATTENTE".equals(r.getStatus()))
+            .count());
+        rectificationsByStatus.put("ACCEPTEE", allRectifications.stream()
+            .filter(r -> "ACCEPTEE".equals(r.getStatus()))
+            .count());
+        rectificationsByStatus.put("REFUSEE", allRectifications.stream()
+            .filter(r -> "REFUSEE".equals(r.getStatus()))
+            .count());
+
+        stats.put("rectificationsByStatus", rectificationsByStatus);
+
+        // Rectifications by option
+        Map<String, Long> rectificationsByOption = new HashMap<>();
+        List<String> options = List.of("informatique", "mathématique", "telecommunication", "ml", "gc");
+        for (String option : options) {
+            long count = allRectifications.stream()
+                .filter(r -> option.equalsIgnoreCase(r.getOption()))
+                .count();
+            rectificationsByOption.put(option, count);
+        }
+        stats.put("rectificationsByOption", rectificationsByOption);
+
+        return stats;
+    }
+
+    /**
+     * Test method to verify chef assignment for different options
+     */
+    public String testChefMapping(String option) {
+        return userService.testChefMapping(option);
     }
 }

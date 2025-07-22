@@ -89,9 +89,10 @@ public class AuthController {
             adminUser.setUsername("Admin");
             adminUser.setEmail("admin@smartconseil.com");
             adminUser.setPassword(passwordEncoder.encode("admin123"));
-            adminUser.setRole("chef departement");
-            adminUser.setPoste("Chef de Département");
+            adminUser.setRole("admin");
+            adminUser.setPoste("Administrateur Système");
             adminUser.setSecteur("Administration");
+            adminUser.setPhoneNumber("+216 20 000 000");
 
             userRepository.save(adminUser);
 
@@ -221,6 +222,7 @@ public class AuthController {
                 enseignant.setRole("enseignant");
                 enseignant.setPoste("Professeur");
                 enseignant.setSecteur("Informatique");
+                enseignant.setPhoneNumber("+216 20 123 456");
                 userRepository.save(enseignant);
                 response.put("enseignant", "Created: enseignant@test.com / password123");
             }
@@ -234,9 +236,13 @@ public class AuthController {
                 chef.setRole("chef departement");
                 chef.setPoste("Chef de Département");
                 chef.setSecteur("Informatique");
+                chef.setPhoneNumber("+216 20 654 321");
                 userRepository.save(chef);
                 response.put("chef", "Created: chef@test.com / password123");
             }
+
+            // Also ensure we have the required chefs for rectification system
+            this.ensureRectificationChefs(response);
 
             response.put("message", "Test users created successfully");
             return ResponseEntity.ok(response);
@@ -247,16 +253,50 @@ public class AuthController {
         }
     }
 
+    // Ensure chefs exist for rectification system
+    private void ensureRectificationChefs(Map<String, String> response) {
+        // Ensure chef for Informatique exists
+        User chefInfo = userRepository.findByRoleAndSecteur("chef departement", "Informatique");
+        if (chefInfo == null) {
+            User chef = new User();
+            chef.setUsername("Chef Informatique");
+            chef.setEmail("chef.informatique@test.com");
+            chef.setPassword(passwordEncoder.encode("password123"));
+            chef.setRole("chef departement");
+            chef.setPoste("Chef de Département");
+            chef.setSecteur("Informatique");
+            chef.setPhoneNumber("+216 20 111 111");
+            userRepository.save(chef);
+            response.put("chef_informatique_created", "Created: chef.informatique@test.com");
+        }
+
+        // Ensure chef for Télécommunications exists
+        User chefTelecom = userRepository.findByRoleAndSecteur("chef departement", "Télécommunications");
+        if (chefTelecom == null) {
+            User chef = new User();
+            chef.setUsername("Chef Télécommunications");
+            chef.setEmail("chef.telecommunications@test.com");
+            chef.setPassword(passwordEncoder.encode("password123"));
+            chef.setRole("chef departement");
+            chef.setPoste("Chef de Département");
+            chef.setSecteur("Télécommunications");
+            chef.setPhoneNumber("+216 20 222 222");
+            userRepository.save(chef);
+            response.put("chef_telecommunications_created", "Created: chef.telecommunications@test.com");
+        }
+    }
+
     // Enhanced endpoint to create test users for all sectors
     @PostMapping("/create-sector-test-users")
     public ResponseEntity<Map<String, String>> createSectorTestUsers() {
         try {
             Map<String, String> response = new HashMap<>();
-            String[] sectors = {"Informatique", "Mathématique", "Telecommunication", "ML", "GC"};
+            // Updated sectors to match frontend FormDataService exactly
+            String[] sectors = {"Informatique", "Télécommunications"};
 
             for (String sector : sectors) {
-                // Create chef departement for each sector
-                String chefEmail = "chef." + sector.toLowerCase() + "@test.com";
+                // Create chef departement for each sector with exact sector name
+                String chefEmail = "chef." + sector.toLowerCase().replace("é", "e").replace("ç", "c") + "@test.com";
                 if (userRepository.findByEmail(chefEmail) == null) {
                     User chef = new User();
                     chef.setUsername("Chef " + sector);
@@ -264,13 +304,15 @@ public class AuthController {
                     chef.setPassword(passwordEncoder.encode("password123"));
                     chef.setRole("chef departement");
                     chef.setPoste("Chef de Département");
-                    chef.setSecteur(sector);
+                    chef.setSecteur(sector); // Use exact sector name from frontend
                     userRepository.save(chef);
                     response.put("chef_" + sector, "Created: " + chefEmail + " / password123");
+                } else {
+                    response.put("chef_" + sector, "Already exists: " + chefEmail);
                 }
 
                 // Create enseignant for each sector
-                String enseignantEmail = "enseignant." + sector.toLowerCase() + "@test.com";
+                String enseignantEmail = "enseignant." + sector.toLowerCase().replace("é", "e") + "@test.com";
                 if (userRepository.findByEmail(enseignantEmail) == null) {
                     User enseignant = new User();
                     enseignant.setUsername("Enseignant " + sector);
@@ -289,6 +331,55 @@ public class AuthController {
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to create sector test users: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    // Quick endpoint to initialize required chefs for rectification system
+    @PostMapping("/init-rectification-chefs")
+    public ResponseEntity<Map<String, String>> initRectificationChefs() {
+        try {
+            Map<String, String> response = new HashMap<>();
+
+            // Ensure chef for Informatique exists
+            User chefInfo = userRepository.findByRoleAndSecteur("chef departement", "Informatique");
+            if (chefInfo == null) {
+                User chef = new User();
+                chef.setUsername("Chef Informatique");
+                chef.setEmail("chef.informatique@test.com");
+                chef.setPassword(passwordEncoder.encode("password123"));
+                chef.setRole("chef departement");
+                chef.setPoste("Chef de Département");
+                chef.setSecteur("Informatique");
+                chef.setPhoneNumber("+216 20 111 111");
+                userRepository.save(chef);
+                response.put("informatique", "Created: chef.informatique@test.com / password123");
+            } else {
+                response.put("informatique", "Already exists: " + chefInfo.getEmail());
+            }
+
+            // Ensure chef for Télécommunications exists
+            User chefTelecom = userRepository.findByRoleAndSecteur("chef departement", "Télécommunications");
+            if (chefTelecom == null) {
+                User chef = new User();
+                chef.setUsername("Chef Télécommunications");
+                chef.setEmail("chef.telecommunications@test.com");
+                chef.setPassword(passwordEncoder.encode("password123"));
+                chef.setRole("chef departement");
+                chef.setPoste("Chef de Département");
+                chef.setSecteur("Télécommunications");
+                chef.setPhoneNumber("+216 20 222 222");
+                userRepository.save(chef);
+                response.put("telecommunications", "Created: chef.telecommunications@test.com / password123");
+            } else {
+                response.put("telecommunications", "Already exists: " + chefTelecom.getEmail());
+            }
+
+            response.put("message", "Rectification chefs initialized successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to initialize chefs: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }

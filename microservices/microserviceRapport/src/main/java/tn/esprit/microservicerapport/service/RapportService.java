@@ -11,7 +11,9 @@ import tn.esprit.microservicerapport.entity.Rapport.StatutRapport;
 import tn.esprit.microservicerapport.repository.RapportRepository;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -167,6 +169,36 @@ public class RapportService {
                 .stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get report statistics for admin dashboard
+     */
+    public Map<String, Object> getReportStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Total reports
+        long totalReports = rapportRepository.count();
+        stats.put("totalReports", totalReports);
+
+        // Reports by status
+        Map<String, Long> reportsByStatus = new HashMap<>();
+        reportsByStatus.put("BROUILLON", (long) rapportRepository.findByStatut(StatutRapport.BROUILLON).size());
+        reportsByStatus.put("VALIDE", (long) rapportRepository.findByStatut(StatutRapport.VALIDE).size());
+        stats.put("reportsByStatus", reportsByStatus);
+
+        // Reports by sector
+        Map<String, Long> reportsBySector = new HashMap<>();
+        List<String> sectors = List.of("informatique", "mathématique", "telecommunication", "ml", "gc");
+        for (String sector : sectors) {
+            long count = rapportRepository.findAll().stream()
+                .filter(rapport -> sector.equalsIgnoreCase(rapport.getSecteur()))
+                .count();
+            reportsBySector.put(sector, count);
+        }
+        stats.put("reportsBySector", reportsBySector);
+
+        return stats;
     }
     
     /**

@@ -118,10 +118,20 @@ public class RapportController {
     /**
      * Get all reports (admin function)
      */
-    @PreAuthorize("hasRole('CHEF DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT') or hasRole('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<RapportResponseDTO>> getAllReports() {
         List<RapportResponseDTO> reports = rapportService.getAllRapports();
         return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * Get report statistics (admin only)
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/statistics")
+    public ResponseEntity<Map<String, Object>> getReportStatistics() {
+        Map<String, Object> stats = rapportService.getReportStatistics();
+        return ResponseEntity.ok(stats);
     }
 }

@@ -16,6 +16,9 @@ private  Long id;
 
     private String username;
     private String email;
+    private String poste;
+    private String secteur;
+    private String phoneNumber;
     public String getToken() {
         return token;
     }
@@ -52,5 +55,27 @@ private  Long id;
             this.email = email;
         }
 
+        public String getPoste() {
+            return poste;
+        }
 
+        public void setPoste(String poste) {
+            this.poste = poste;
+        }
+
+        public String getSecteur() {
+            return secteur;
+        }
+
+        public void setSecteur(String secteur) {
+            this.secteur = secteur;
+        }
+
+        public String getPhoneNumber() {
+            return phoneNumber;
+        }
+
+        public void setPhoneNumber(String phoneNumber) {
+            this.phoneNumber = phoneNumber;
+        }
 }

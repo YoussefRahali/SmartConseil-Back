@@ -26,10 +26,10 @@ public class RectificationController {
     private final RectificationService service;
 
     /**
-     * Get all rectifications (admin only)
+     * Get all rectifications (admin and chef departement)
      */
     @GetMapping
-    @PreAuthorize("hasRole('CHEF_DEPARTEMENT')")
+    @PreAuthorize("hasRole('CHEF_DEPARTEMENT') or hasRole('ADMIN')")
     public List<RectificationResponseDTO> getAll() {
         return service.findAll();
     }
@@ -108,6 +108,15 @@ public class RectificationController {
     }
 
     /**
+     * Test endpoint to verify chef assignment for different options
+     */
+    @GetMapping("/test-chef-mapping/{option}")
+    public ResponseEntity<String> testChefMapping(@PathVariable String option) {
+        String result = service.testChefMapping(option);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Test endpoint to debug authentication
      */
     @GetMapping("/test-auth")
@@ -155,5 +164,15 @@ public class RectificationController {
         }
 
         return ResponseEntity.ok(debugInfo);
+    }
+
+    /**
+     * Get rectification statistics (admin only)
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/statistics")
+    public ResponseEntity<Map<String, Object>> getRectificationStatistics() {
+        Map<String, Object> stats = service.getRectificationStatistics();
+        return ResponseEntity.ok(stats);
     }
 }
