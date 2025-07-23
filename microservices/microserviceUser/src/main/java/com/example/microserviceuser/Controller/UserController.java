@@ -64,6 +64,9 @@ public class UserController {
             if (user.getPhoneNumber() != null) {
                 existingUser.setPhoneNumber(user.getPhoneNumber());
             }
+            if (user.getProfilePicture() != null) {
+                existingUser.setProfilePicture(user.getProfilePicture());
+            }
             userRepository.save(existingUser);
             return ResponseEntity.ok(existingUser);
         }
@@ -119,6 +122,72 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    // Endpoint pour mettre à jour la photo de profil
+    @PutMapping("/profile-picture")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, String>> updateProfilePicture(@RequestBody Map<String, String> request) {
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            System.out.println("=== Profile Picture Update Request ===");
+            String email = request.get("email");
+            String profilePicture = request.get("profilePicture");
+
+            System.out.println("Email: " + email);
+            System.out.println("ProfilePicture length: " + (profilePicture != null ? profilePicture.length() : "null"));
+            System.out.println("ProfilePicture preview: " + (profilePicture != null ? profilePicture.substring(0, Math.min(50, profilePicture.length())) + "..." : "null"));
+
+            if (email == null || email.trim().isEmpty()) {
+                System.out.println("ERROR: Email is null or empty");
+                response.put("error", "Email est requis");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (profilePicture == null || profilePicture.trim().isEmpty()) {
+                System.out.println("ERROR: ProfilePicture is null or empty");
+                response.put("error", "Image de profil est requise");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validation de base pour s'assurer que c'est une image base64 valide
+            if (!profilePicture.startsWith("data:image/")) {
+                System.out.println("ERROR: Invalid image format - doesn't start with data:image/");
+                response.put("error", "Format d'image invalide");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Vérifier la taille de l'image (limite à 5MB en base64)
+            if (profilePicture.length() > 7000000) { // ~5MB en base64
+                System.out.println("ERROR: Image too large - " + profilePicture.length() + " characters");
+                response.put("error", "Image trop volumineuse (max 5MB)");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            User existingUser = userRepository.findByEmail(email);
+            if (existingUser == null) {
+                System.out.println("ERROR: User not found for email: " + email);
+                response.put("error", "Utilisateur non trouvé");
+                return ResponseEntity.notFound().build();
+            }
+
+            System.out.println("User found: " + existingUser.getUsername() + " (ID: " + existingUser.getId() + ")");
+            System.out.println("Current profile picture: " + (existingUser.getProfilePicture() != null ? "EXISTS (" + existingUser.getProfilePicture().length() + " chars)" : "NULL"));
+
+            existingUser.setProfilePicture(profilePicture);
+            User savedUser = userRepository.save(existingUser);
+
+            System.out.println("User saved successfully. New profile picture: " + (savedUser.getProfilePicture() != null ? "EXISTS (" + savedUser.getProfilePicture().length() + " chars)" : "NULL"));
+
+            response.put("message", "Photo de profil mise à jour avec succès");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour de la photo de profil: " + e.getMessage());
+            e.printStackTrace();
+            response.put("error", "Erreur interne du serveur");
+            return ResponseEntity.status(500).body(response);
+        }
+    }
 
     // Endpoint pour supprimer un utilisateur (chef de département et admin)
     @DeleteMapping("/{id}")
@@ -211,6 +280,9 @@ public class UserController {
             existingUser.setRole(userUpdate.getRole());
             if (userUpdate.getPhoneNumber() != null) {
                 existingUser.setPhoneNumber(userUpdate.getPhoneNumber());
+            }
+            if (userUpdate.getProfilePicture() != null) {
+                existingUser.setProfilePicture(userUpdate.getProfilePicture());
             }
             // Don't update password here - use separate endpoint for password changes
             userRepository.save(existingUser);

@@ -25,4 +25,7 @@ public class User {
     private String poste;
     private String secteur;
     private String phoneNumber;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String profilePicture; // Base64 encoded image data
 }

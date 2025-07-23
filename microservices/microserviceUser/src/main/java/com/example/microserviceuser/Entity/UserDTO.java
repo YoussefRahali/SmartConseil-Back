@@ -19,6 +19,8 @@ private  Long id;
     private String poste;
     private String secteur;
     private String phoneNumber;
+    private String profilePicture;
+
     public String getToken() {
         return token;
     }
@@ -77,5 +79,13 @@ private  Long id;
 
         public void setPhoneNumber(String phoneNumber) {
             this.phoneNumber = phoneNumber;
+        }
+
+        public String getProfilePicture() {
+            return profilePicture;
+        }
+
+        public void setProfilePicture(String profilePicture) {
+            this.profilePicture = profilePicture;
         }
 }
