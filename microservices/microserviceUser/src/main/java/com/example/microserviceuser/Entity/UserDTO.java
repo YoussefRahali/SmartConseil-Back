@@ -16,6 +16,11 @@ private  Long id;
 
     private String username;
     private String email;
+    private String poste;
+    private String secteur;
+    private String phoneNumber;
+    private String profilePicture;
+
     public String getToken() {
         return token;
     }
@@ -52,5 +57,35 @@ private  Long id;
             this.email = email;
         }
 
+        public String getPoste() {
+            return poste;
+        }
 
+        public void setPoste(String poste) {
+            this.poste = poste;
+        }
+
+        public String getSecteur() {
+            return secteur;
+        }
+
+        public void setSecteur(String secteur) {
+            this.secteur = secteur;
+        }
+
+        public String getPhoneNumber() {
+            return phoneNumber;
+        }
+
+        public void setPhoneNumber(String phoneNumber) {
+            this.phoneNumber = phoneNumber;
+        }
+
+        public String getProfilePicture() {
+            return profilePicture;
+        }
+
+        public void setProfilePicture(String profilePicture) {
+            this.profilePicture = profilePicture;
+        }
 }

@@ -7,12 +7,13 @@
         <option value="$PROJECT_DIR$/microservices/microserviceConseil/pom.xml" />
         <option value="$PROJECT_DIR$/microservices/microservicePlanification/pom.xml" />
         <option value="$PROJECT_DIR$/microservices/microserviceUser/pom.xml" />
-        <option value="$PROJECT_DIR$/eureka/pom.xml" />
-        <option value="$PROJECT_DIR$/gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/microserviceRapport/pom.xml" />
+        <option value="$PROJECT_DIR$/microservices/microserviceRectification/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_X" default="true" project-jdk-name="22" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_22" project-jdk-name="17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

@@ -19,13 +19,28 @@ public class JwtUtils {
 
     private static final long EXPIRATION_TIME = 86400000; // 24 heures (en millisecondes)
 
-    // Génération du token
-    public static String generateToken(String username) {
+    // Génération du token avec rôle
+//    public static String generateToken(String username, String role) {
+//        return Jwts.builder()
+//                //.setSubject(username)  // Ajoute l'username dans le JWT
+//                .claim("role", role)   // Ajoute le rôle dans le JWT
+//                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))  // Expiration dans 24 heures
+//                .signWith(KEY)  // Signature avec la clé secrète
+//                .compact();  // Génère le token compact
+//    }
+
+    public static String generateToken(String email, String role) {
         return Jwts.builder()
-                .setSubject(username)  // Ajoute l'username dans le JWT
+                .setSubject(email)  // Ajoute l'email dans le JWT comme subject
+                .claim("role", role)   // Ajoute le rôle dans le JWT
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))  // Expiration dans 24 heures
                 .signWith(KEY)  // Signature avec la clé secrète
                 .compact();  // Génère le token compact
+    }
+
+    // Génération du token (méthode de compatibilité)
+    public static String generateToken(String username) {
+        return generateToken(username, "USER");
     }
 
     // Extraction de l'username à partir du token
@@ -36,6 +51,16 @@ public class JwtUtils {
                 .parseClaimsJws(token)  // Parse le token
                 .getBody()
                 .getSubject();  // Récupère l'username
+    }
+
+    // Extraction du rôle à partir du token
+    public static String extractRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(KEY)  // Utilisation de la même clé pour vérifier la signature
+                .build()
+                .parseClaimsJws(token)  // Parse le token
+                .getBody()
+                .get("role", String.class);  // Récupère le rôle
     }
 
     // Validation du token
