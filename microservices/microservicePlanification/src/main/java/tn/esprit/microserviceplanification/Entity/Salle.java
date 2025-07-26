@@ -1,0 +1,29 @@
+package tn.esprit.microserviceplanification.Entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class Salle {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String nomSalle;
+    private String etage;
+    private Integer capacite;
+    private String equipement;
+    private String description;
+
+    @OneToMany(mappedBy = "salle", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Conseil> conseils;
+}

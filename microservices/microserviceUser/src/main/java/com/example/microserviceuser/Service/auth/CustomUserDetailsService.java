@@ -38,9 +38,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         return null;
     }
     public String getUserusername(String email) {
-        User user = userRepository2.findByEmail(email);  // Récupérer l'utilisateur depuis la base de données
+        User user = userRepository2.findByEmail(email);
         if (user != null) {
-            return user.getUsername();  // Retourner l'ID de l'utilisateur
+            return user.getUsername();
         }
         return null;
     }
