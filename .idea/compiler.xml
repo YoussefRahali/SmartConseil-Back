@@ -19,6 +19,8 @@
         </processorPath>
         <module name="microserviceConseil" />
         <module name="microservicePlanification" />
+        <module name="eureka" />
+        <module name="gateway" />
       </profile>
       <profile name="Annotation profile for microserviceRectification" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -37,6 +39,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
         </processorPath>
         <module name="microserviceRapport" />
+
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -45,6 +48,8 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="eureka" options="-parameters" />
+      <module name="gateway" options="-parameters" />
       <module name="microserviceConseil" options="-parameters" />
       <module name="microservicePlanification" options="-parameters" />
       <module name="microserviceRapport" options="-parameters" />

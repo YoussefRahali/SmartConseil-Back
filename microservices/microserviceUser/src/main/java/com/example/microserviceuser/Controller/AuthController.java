@@ -19,16 +19,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = {"http://localhost:4200","http://192.168.1.13:4200"})
 public class AuthController {
 
     @Autowired
     private CustomUserDetailsService userService;
+    @Autowired
+    UserRepository utilisateurRepository;
 
     private AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
@@ -47,7 +51,12 @@ public class AuthController {
         this.tokenService = tokenService;
         this.mailService = mailService;// Injection correcte
     }
-
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUtilisateurById(@PathVariable("id") Long id) {
+        return utilisateurRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
     @ResponseBody
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerUser(@RequestBody User user) {
@@ -110,7 +119,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<UserDTO> authenticate(@RequestBody User user) {
-        System.out.println("Tentative de connexion pour l'utilisateur : " + user.getUsername());
+        System.out.println("Tentative de connexion pour l'utilisateur : " + user.getEmail());
 
         try {
             authenticationManager.authenticate(
@@ -182,6 +191,9 @@ public class AuthController {
 
         return ResponseEntity.ok("Email de réinitialisation envoyé !");
     }
+
+    @GetMapping("/allUsers")
+    public List<User> getAllUsers() { return utilisateurRepository.findAll(); }
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestBody User user) {
