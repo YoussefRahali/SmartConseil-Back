@@ -1,6 +1,13 @@
 package tn.esprit.microserviceplanification.Service;
 
+<<<<<<< HEAD
 import tn.esprit.microserviceplanification.Entity.*;
+=======
+import tn.esprit.microserviceplanification.Entity.Conseil;
+import tn.esprit.microserviceplanification.Entity.ConseilDTO;
+import tn.esprit.microserviceplanification.Entity.ConseilUtilisateur;
+import tn.esprit.microserviceplanification.Entity.Salle;
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 import java.util.List;
 
@@ -24,6 +31,7 @@ public void updateEtatConseil(Integer conseilId, Boolean etat);
  public boolean updateMessage(Integer conseilId, Long utilisateurId, String newMessage,String justifictaion) ;
  List<ConseilUtilisateur>getConseilUtilisateurs(Long utilisateurId);
  public void setDeroulementSeance(Integer conseilId, String deroulement);
+<<<<<<< HEAD
 
  // Méthodes pour les options et classes
  public List<Option> getAllOptions();
@@ -36,4 +44,6 @@ public void updateEtatConseil(Integer conseilId, Boolean etat);
  public List<ClasseDTO> getClassesByOptionDTO(Integer optionId);
  public OptionDTO addOptionDTO(OptionDTO optionDTO);
  public ClasseDTO addClasseDTO(ClasseDTO classeDTO);
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 }

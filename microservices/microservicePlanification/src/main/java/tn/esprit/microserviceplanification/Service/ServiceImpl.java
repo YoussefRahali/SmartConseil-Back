@@ -5,12 +5,22 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.microserviceplanification.Entity.*;
+<<<<<<< HEAD
 import tn.esprit.microserviceplanification.Repository.*;
+=======
+import tn.esprit.microserviceplanification.Repository.ConseilRepo;
+import tn.esprit.microserviceplanification.Repository.ConseilUtilisateurRepo;
+import tn.esprit.microserviceplanification.Repository.SalleRepo;
+import tn.esprit.microserviceplanification.Repository.UtilisateurClient;
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+<<<<<<< HEAD
 import java.util.stream.Collectors;
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 @AllArgsConstructor
 @Service
@@ -19,8 +29,11 @@ public class ServiceImpl implements  IService {
     ConseilRepo conseilRepo;
     SalleRepo salleRepo;
     ConseilUtilisateurRepo conseilUtilisateurRepo;
+<<<<<<< HEAD
     OptionRepo optionRepo;
     ClasseRepo classeRepo;
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 
     @Autowired
@@ -46,6 +59,7 @@ public class ServiceImpl implements  IService {
         conseil.setDate(request.getDate());
         conseil.setDescription(request.getDescription());
         conseil.setDuree(request.getDuree());
+<<<<<<< HEAD
         // Récupérer l'option
         Option option = optionRepo.findById(request.getOptionId())
                 .orElseThrow(() -> new RuntimeException("Option non trouvée avec id: " + request.getOptionId()));
@@ -57,6 +71,9 @@ public class ServiceImpl implements  IService {
             throw new RuntimeException("Une ou plusieurs classes non trouvées");
         }
         conseil.setClasses(classes);
+=======
+        conseil.setClasses(request.getClasses());
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
         conseil.setSalle(salleRepo.findById(request.getSalleId()).get());
         conseil.setHeure(request.getHeure());
         conseil.setPresidentId(PesidentId);
@@ -196,6 +213,7 @@ conseil.setToken(generateRandomToken(8));
     public List<Conseil> getConseil() {
         return conseilRepo.findAll();
     }
+<<<<<<< HEAD
 
     @Override
     public List<Option> getAllOptions() {
@@ -276,4 +294,6 @@ conseil.setToken(generateRandomToken(8));
         dto.setOptionNom(classe.getOption().getNom());
         return dto;
     }
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 }
