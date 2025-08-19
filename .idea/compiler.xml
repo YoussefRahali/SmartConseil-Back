@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="tpFoyer-17" />
+        <module name="microservice5" />
       </profile>
       <profile name="Annotation profile for smartconseil-back" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -17,7 +18,6 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/unknown/lombok-unknown.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/unknown/lombok-unknown.jar" />
         </processorPath>
-        <module name="microserviceConseil" />
         <module name="microservicePlanification" />
         <module name="eureka" />
         <module name="gateway" />
@@ -39,7 +39,15 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
         </processorPath>
         <module name="microserviceRapport" />
-
+      </profile>
+      <profile name="Annotation profile for microserviceConseil" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/unknown/lombok-unknown.jar" />
+        </processorPath>
+        <module name="microserviceConseil" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -50,6 +58,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="eureka" options="-parameters" />
       <module name="gateway" options="-parameters" />
+      <module name="microservice5" options="-parameters" />
       <module name="microserviceConseil" options="-parameters" />
       <module name="microservicePlanification" options="-parameters" />
       <module name="microserviceRapport" options="-parameters" />
