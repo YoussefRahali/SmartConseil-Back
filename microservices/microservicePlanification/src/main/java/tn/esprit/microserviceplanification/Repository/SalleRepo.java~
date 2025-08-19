@@ -1,0 +1,2 @@
+package tn.esprit.microserviceplanification.Repository;public interface SalleRepo {
+}
