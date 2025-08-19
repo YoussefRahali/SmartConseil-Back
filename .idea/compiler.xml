@@ -51,7 +51,11 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+<<<<<<< HEAD
+      <module name="SmartConseil-Back" target="17" />
+=======
       <module name="SmartConseil-Back" target="1.5" />
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">

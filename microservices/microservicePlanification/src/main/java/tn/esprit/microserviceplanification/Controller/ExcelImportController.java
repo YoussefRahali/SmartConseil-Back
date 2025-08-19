@@ -1,0 +1,68 @@
+package tn.esprit.microserviceplanification.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import tn.esprit.microserviceplanification.Entity.ExcelData;
+import tn.esprit.microserviceplanification.Entity.ExcelDataEleve;
+import tn.esprit.microserviceplanification.Service.ExcelImportService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/conseils")
+public class ExcelImportController {
+
+    @GetMapping("/excelDataEleve/{conseilId}")
+    public ResponseEntity<List<ExcelDataEleve>> getExcelDataEleveByConseilId(@PathVariable("conseilId") Integer conseilId) {
+        List<ExcelDataEleve> data = excelImportService.getExcelDataEleveByConseilId(conseilId);
+        return new ResponseEntity<>(data, HttpStatus.OK);
+    }
+
+    @Autowired
+    private ExcelImportService excelImportService;
+
+
+    @PostMapping("/importExcel/{id}")
+    public ResponseEntity<?> importExcelFile(@RequestParam("file") MultipartFile file,@PathVariable("id") Integer id) {
+        try {
+            if (file.isEmpty()) {
+                return new ResponseEntity<>("Veuillez sélectionner un fichier", HttpStatus.BAD_REQUEST);
+            }
+
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
+                return new ResponseEntity<>("Veuillez télécharger un fichier Excel valide", HttpStatus.BAD_REQUEST);
+            }
+
+            List<ExcelData> importedData = excelImportService.importExcelFile(file,id);
+            return new ResponseEntity<>(importedData, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Erreur lors de l'import: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @PostMapping("/importExcelEleve/{id}")
+    public ResponseEntity<?> importExcelFileEleve(@RequestParam("file") MultipartFile file,@PathVariable("id") Integer id) {
+        try {
+            if (file.isEmpty()) {
+                return new ResponseEntity<>("Veuillez sélectionner un fichier", HttpStatus.BAD_REQUEST);
+            }
+
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
+                return new ResponseEntity<>("Veuillez télécharger un fichier Excel valide", HttpStatus.BAD_REQUEST);
+            }
+
+            List<ExcelDataEleve> importedData = excelImportService.importExcelFileEleve(file,id);
+            return new ResponseEntity<>(importedData, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Erreur lors de l'import: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+}

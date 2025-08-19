@@ -5,14 +5,22 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.microserviceplanification.Entity.*;
+<<<<<<< HEAD
+import tn.esprit.microserviceplanification.Repository.*;
+=======
 import tn.esprit.microserviceplanification.Repository.ConseilRepo;
 import tn.esprit.microserviceplanification.Repository.ConseilUtilisateurRepo;
 import tn.esprit.microserviceplanification.Repository.SalleRepo;
 import tn.esprit.microserviceplanification.Repository.UtilisateurClient;
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+<<<<<<< HEAD
+import java.util.stream.Collectors;
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 @AllArgsConstructor
 @Service
@@ -21,6 +29,11 @@ public class ServiceImpl implements  IService {
     ConseilRepo conseilRepo;
     SalleRepo salleRepo;
     ConseilUtilisateurRepo conseilUtilisateurRepo;
+<<<<<<< HEAD
+    OptionRepo optionRepo;
+    ClasseRepo classeRepo;
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
 
     @Autowired
@@ -46,7 +59,21 @@ public class ServiceImpl implements  IService {
         conseil.setDate(request.getDate());
         conseil.setDescription(request.getDescription());
         conseil.setDuree(request.getDuree());
+<<<<<<< HEAD
+        // Récupérer l'option
+        Option option = optionRepo.findById(request.getOptionId())
+                .orElseThrow(() -> new RuntimeException("Option non trouvée avec id: " + request.getOptionId()));
+        conseil.setOption(option);
+
+        // Récupérer les classes
+        List<Classe> classes = classeRepo.findAllById(request.getClasseIds());
+        if (classes.size() != request.getClasseIds().size()) {
+            throw new RuntimeException("Une ou plusieurs classes non trouvées");
+        }
+        conseil.setClasses(classes);
+=======
         conseil.setClasses(request.getClasses());
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
         conseil.setSalle(salleRepo.findById(request.getSalleId()).get());
         conseil.setHeure(request.getHeure());
         conseil.setPresidentId(PesidentId);
@@ -186,4 +213,87 @@ conseil.setToken(generateRandomToken(8));
     public List<Conseil> getConseil() {
         return conseilRepo.findAll();
     }
+<<<<<<< HEAD
+
+    @Override
+    public List<Option> getAllOptions() {
+        return optionRepo.findAll();
+    }
+
+    @Override
+    public List<Classe> getClassesByOption(Integer optionId) {
+        return classeRepo.findByOptionId(optionId);
+    }
+
+    @Override
+    public Option addOption(Option option) {
+        return optionRepo.save(option);
+    }
+
+    @Override
+    public Classe addClasse(Classe classe) {
+        return classeRepo.save(classe);
+    }
+
+    // Méthodes DTO pour éviter les problèmes de sérialisation
+    @Override
+    public List<OptionDTO> getAllOptionsDTO() {
+        List<Option> options = optionRepo.findAll();
+        return options.stream()
+                .map(this::convertToOptionDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ClasseDTO> getClassesByOptionDTO(Integer optionId) {
+        List<Classe> classes = classeRepo.findByOptionId(optionId);
+        return classes.stream()
+                .map(this::convertToClasseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OptionDTO addOptionDTO(OptionDTO optionDTO) {
+        Option option = new Option();
+        option.setNom(optionDTO.getNom());
+        option.setDescription(optionDTO.getDescription());
+
+        Option savedOption = optionRepo.save(option);
+        return convertToOptionDTO(savedOption);
+    }
+
+    @Override
+    public ClasseDTO addClasseDTO(ClasseDTO classeDTO) {
+        Classe classe = new Classe();
+        classe.setNom(classeDTO.getNom());
+        classe.setDescription(classeDTO.getDescription());
+
+        Option option = optionRepo.findById(classeDTO.getOptionId())
+                .orElseThrow(() -> new RuntimeException("Option non trouvée avec id: " + classeDTO.getOptionId()));
+        classe.setOption(option);
+
+        Classe savedClasse = classeRepo.save(classe);
+        return convertToClasseDTO(savedClasse);
+    }
+
+    // Méthodes de conversion
+    private OptionDTO convertToOptionDTO(Option option) {
+        OptionDTO dto = new OptionDTO();
+        dto.setId(option.getId());
+        dto.setNom(option.getNom());
+        dto.setDescription(option.getDescription());
+        return dto;
+    }
+
+    private ClasseDTO convertToClasseDTO(Classe classe) {
+        ClasseDTO dto = new ClasseDTO();
+        dto.setId(classe.getId());
+        dto.setNom(classe.getNom());
+        dto.setDescription(classe.getDescription());
+        dto.setOptionId(classe.getOption().getId());
+        dto.setOptionNom(classe.getOption().getNom());
+        return dto;
+    }
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 }

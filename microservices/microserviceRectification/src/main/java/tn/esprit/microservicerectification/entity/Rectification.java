@@ -21,9 +21,12 @@ public class Rectification {
 
     private String classe;
     private String option;
+<<<<<<< HEAD
+=======
     private String module;
     private String typeNote;
     private String session;
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
     private Double ancienneNote;
     private Double nouvelleNote;
     private String justification;

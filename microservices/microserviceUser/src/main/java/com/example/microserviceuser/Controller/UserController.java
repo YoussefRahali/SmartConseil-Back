@@ -311,7 +311,9 @@ public class UserController {
 
         // Users by sector
         Map<String, Long> usersBySector = new HashMap<>();
+
         List<String> sectors = List.of("informatique", "mathématique", "telecommunication", "EM", "gc");
+
         for (String sector : sectors) {
             long count = userRepository.findAll().stream()
                 .filter(user -> sector.equalsIgnoreCase(user.getSecteur()))

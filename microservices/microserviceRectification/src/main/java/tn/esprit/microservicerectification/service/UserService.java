@@ -31,6 +31,17 @@ public class UserService {
      */
     public String findChefDepartementByOption(String option) {
         try {
+<<<<<<< HEAD
+            // Map option to sector
+            String sector = mapOptionToSector(option);
+            String url = userServiceUrl + "/api/users/chef-by-sector/" + sector;
+            log.info("Calling user service to find chef for option: {} (mapped to sector: {})", option, sector);
+
+            String chefEmail = restTemplate.getForObject(url, String.class);
+            log.info("Found chef for option {} (sector {}): {}", option, sector, chefEmail);
+
+            return chefEmail != null ? chefEmail : "chef@test.com";
+=======
             // Map option to canonical sector
             String canonicalSector = mapOptionToSector(option);
             log.info("Canonical sector for option '{}': {}", option, canonicalSector);
@@ -71,6 +82,7 @@ public class UserService {
             // If all attempts failed or only default returned, fall back
             log.warn("No specific chef found for option '{}', returning default", option);
             return "chef@test.com";
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
         } catch (Exception e) {
             log.error("Error finding chef departement for option: {}", option, e);
@@ -118,6 +130,8 @@ public class UserService {
             return "telecommunication";
         }
 
+<<<<<<< HEAD
+=======
         // EM sector options -> EM
         if (trimmedOption.equals("1EM") || trimmedOption.equals("2EM") || trimmedOption.equals("3EM") ||
             trimmedOption.equals("4 OGI / 4 MécaT") || trimmedOption.equals("5 OGI / 5 MécaT")) {
@@ -132,6 +146,7 @@ public class UserService {
             return "GC";
         }
 
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
         // Check if option directly matches known database sector names
         if (trimmedOption.equalsIgnoreCase("informatique")) {
             log.info("Option '{}' matches informatique sector", trimmedOption);
@@ -143,6 +158,8 @@ public class UserService {
             log.info("Option '{}' matches telecommunication sector", trimmedOption);
             return "telecommunication";
         }
+<<<<<<< HEAD
+=======
         if (trimmedOption.equalsIgnoreCase("em")) {
             log.info("Option '{}' matches EM sector", trimmedOption);
             return "EM";
@@ -151,6 +168,7 @@ public class UserService {
             log.info("Option '{}' matches GC sector", trimmedOption);
             return "GC";
         }
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 
         // Default fallback
         log.warn("Option '{}' not recognized, defaulting to informatique", trimmedOption);

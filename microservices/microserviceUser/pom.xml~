@@ -13,7 +13,11 @@
 <name>tpFoyer-17</name>
 <description>tpFoyer-17</description>
 <properties>
+<<<<<<< HEAD
+<java.version>21</java.version>
+=======
 <java.version>17</java.version>
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 </properties>
 <dependencies>
 <!--  Spring Security  -->
@@ -32,6 +36,13 @@
 	<artifactId>jjwt-impl</artifactId>
 	<version>0.11.5</version>
 </dependency>
+<<<<<<< HEAD
+	<dependency>
+		<groupId>org.springframework.cloud</groupId>
+		<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+	</dependency>
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 <dependency>
 	<groupId>io.jsonwebtoken</groupId>
 	<artifactId>jjwt-jackson</artifactId>
@@ -59,6 +70,15 @@
 	<artifactId>mysql-connector-j</artifactId>
 	<scope>runtime</scope>
 </dependency>
+<<<<<<< HEAD
+<!-- H2 Database for testing (optional) -->
+<dependency>
+	<groupId>com.h2database</groupId>
+	<artifactId>h2</artifactId>
+	<scope>runtime</scope>
+</dependency>
+=======
+>>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 <dependency>
 	<groupId>org.projectlombok</groupId>
 	<artifactId>lombok</artifactId>
