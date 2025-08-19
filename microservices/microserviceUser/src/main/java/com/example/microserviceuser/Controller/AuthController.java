@@ -304,7 +304,7 @@ public class AuthController {
         try {
             Map<String, String> response = new HashMap<>();
             // Updated sectors to match frontend FormDataService exactly
-            String[] sectors = {"Informatique", "Télécommunications"};
+            String[] sectors = {"Informatique", "Télécommunications", "EM", "GC"};
 
             for (String sector : sectors) {
                 // Create chef departement for each sector with exact sector name

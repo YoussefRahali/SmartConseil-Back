@@ -36,6 +36,9 @@ public class RectificationService {
         r.setEtudiantNom(dto.getEtudiantNom());
         r.setClasse(dto.getClasse());
         r.setOption(dto.getOption());
+        r.setModule(dto.getModule());
+        r.setTypeNote(dto.getTypeNote());
+        r.setSession(dto.getSession());
         r.setAncienneNote(dto.getAncienneNote());
         r.setNouvelleNote(dto.getNouvelleNote());
         r.setJustification(dto.getJustification());
@@ -181,6 +184,9 @@ public class RectificationService {
         dto.setEtudiantNom(rectification.getEtudiantNom());
         dto.setClasse(rectification.getClasse());
         dto.setOption(rectification.getOption());
+        dto.setModule(rectification.getModule());
+        dto.setTypeNote(rectification.getTypeNote());
+        dto.setSession(rectification.getSession());
         dto.setAncienneNote(rectification.getAncienneNote());
         dto.setNouvelleNote(rectification.getNouvelleNote());
         dto.setJustification(rectification.getJustification());
@@ -222,7 +228,7 @@ public class RectificationService {
 
         // Rectifications by option
         Map<String, Long> rectificationsByOption = new HashMap<>();
-        List<String> options = List.of("informatique", "mathématique", "telecommunication", "ml", "gc");
+        List<String> options = List.of("informatique", "mathématique", "telecommunication", "EM", "gc");
         for (String option : options) {
             long count = allRectifications.stream()
                 .filter(r -> option.equalsIgnoreCase(r.getOption()))

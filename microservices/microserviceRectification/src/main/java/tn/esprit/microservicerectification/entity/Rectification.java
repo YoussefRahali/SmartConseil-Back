@@ -21,6 +21,9 @@ public class Rectification {
 
     private String classe;
     private String option;
+    private String module;
+    private String typeNote;
+    private String session;
     private Double ancienneNote;
     private Double nouvelleNote;
     private String justification;

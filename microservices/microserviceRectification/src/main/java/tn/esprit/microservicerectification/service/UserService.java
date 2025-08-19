@@ -31,15 +31,46 @@ public class UserService {
      */
     public String findChefDepartementByOption(String option) {
         try {
-            // Map option to sector
-            String sector = mapOptionToSector(option);
-            String url = userServiceUrl + "/api/users/chef-by-sector/" + sector;
-            log.info("Calling user service to find chef for option: {} (mapped to sector: {})", option, sector);
+            // Map option to canonical sector
+            String canonicalSector = mapOptionToSector(option);
+            log.info("Canonical sector for option '{}': {}", option, canonicalSector);
 
-            String chefEmail = restTemplate.getForObject(url, String.class);
-            log.info("Found chef for option {} (sector {}): {}", option, sector, chefEmail);
+            // Build sector variant candidates to maximize matching across services/DB
+            String[] candidates;
+            switch (canonicalSector.toLowerCase()) {
+                case "em":
+                    candidates = new String[] { "EM", "em" };
+                    break;
+                case "gc":
+                    candidates = new String[] { "GC", "gc" };
+                    break;
+                case "telecommunication":
+                    candidates = new String[] { "Télécommunications", "telecommunication", "télécommunications", "telecommunications" };
+                    break;
+                case "informatique":
+                    candidates = new String[] { "Informatique", "informatique" };
+                    break;
+                default:
+                    candidates = new String[] { canonicalSector };
+            }
 
-            return chefEmail != null ? chefEmail : "chef@test.com";
+            for (String sectorVariant : candidates) {
+                String url = userServiceUrl + "/api/users/chef-by-sector/" + sectorVariant;
+                log.info("Trying user service for sector variant: {} (URL: {})", sectorVariant, url);
+                try {
+                    String chefEmail = restTemplate.getForObject(url, String.class);
+                    log.info("Response for sector '{}': {}", sectorVariant, chefEmail);
+                    if (chefEmail != null && !chefEmail.equalsIgnoreCase("chef@test.com")) {
+                        return chefEmail;
+                    }
+                } catch (Exception inner) {
+                    log.warn("Attempt for sector '{}' failed: {}", sectorVariant, inner.getMessage());
+                }
+            }
+
+            // If all attempts failed or only default returned, fall back
+            log.warn("No specific chef found for option '{}', returning default", option);
+            return "chef@test.com";
 
         } catch (Exception e) {
             log.error("Error finding chef departement for option: {}", option, e);
@@ -87,6 +118,20 @@ public class UserService {
             return "telecommunication";
         }
 
+        // EM sector options -> EM
+        if (trimmedOption.equals("1EM") || trimmedOption.equals("2EM") || trimmedOption.equals("3EM") ||
+            trimmedOption.equals("4 OGI / 4 MécaT") || trimmedOption.equals("5 OGI / 5 MécaT")) {
+            log.info("Option '{}' mapped to EM", trimmedOption);
+            return "EM";
+        }
+
+        // GC sector options -> GC
+        if (trimmedOption.equals("1GC") || trimmedOption.equals("2GC") ||
+            trimmedOption.equals("3GC") || trimmedOption.equals("4GC") || trimmedOption.equals("5GC")) {
+            log.info("Option '{}' mapped to GC", trimmedOption);
+            return "GC";
+        }
+
         // Check if option directly matches known database sector names
         if (trimmedOption.equalsIgnoreCase("informatique")) {
             log.info("Option '{}' matches informatique sector", trimmedOption);
@@ -97,6 +142,14 @@ public class UserService {
             trimmedOption.equalsIgnoreCase("telecommunications")) {
             log.info("Option '{}' matches telecommunication sector", trimmedOption);
             return "telecommunication";
+        }
+        if (trimmedOption.equalsIgnoreCase("em")) {
+            log.info("Option '{}' matches EM sector", trimmedOption);
+            return "EM";
+        }
+        if (trimmedOption.equalsIgnoreCase("gc")) {
+            log.info("Option '{}' matches GC sector", trimmedOption);
+            return "GC";
         }
 
         // Default fallback
