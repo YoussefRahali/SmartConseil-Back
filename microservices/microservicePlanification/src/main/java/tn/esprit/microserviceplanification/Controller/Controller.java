@@ -89,7 +89,6 @@ public class Controller {
     public void setDeroulementSeance(@PathVariable("conseilId") Integer conseilId, @RequestBody String deroulement) {
         serviceIMPL.setDeroulementSeance(conseilId, deroulement);
     }
-<<<<<<< HEAD
 
     // Endpoints pour les options et classes
     @GetMapping("/options")
@@ -111,6 +110,4 @@ public class Controller {
     public ClasseDTO addClasse(@RequestBody ClasseDTO classeDTO) {
         return serviceIMPL.addClasseDTO(classeDTO);
     }
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 }
