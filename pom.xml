@@ -39,13 +39,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.10.1</version>
-<<<<<<< HEAD
                     <configuration>
                         <source>17</source>
                         <target>17</target>
                     </configuration>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
                 </plugin>
             </plugins>
         </pluginManagement>

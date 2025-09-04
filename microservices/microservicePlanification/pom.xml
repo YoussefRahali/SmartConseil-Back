@@ -14,13 +14,10 @@
 	<name>microservice5</name>
 	<description>microservice5</description>
 	<url/>
-<<<<<<< HEAD
 	<properties>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -59,20 +56,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
-<<<<<<< HEAD
-
 		<!-- Jackson Hibernate Module pour gérer les proxies Hibernate -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-hibernate6</artifactId>
 		</dependency>
 
-=======
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 		<!-- Spring Boot DevTools (pour rechargement automatique pendant le dev) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -131,7 +124,6 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
-<<<<<<< HEAD
 		<!-- Apache POI for Excel handling -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -143,15 +135,14 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.3</version>
 		</dependency>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
+
+
 
 	</dependencies>
 
 	<build>
 		<plugins>
 			<plugin>
-<<<<<<< HEAD
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.11.0</version>
