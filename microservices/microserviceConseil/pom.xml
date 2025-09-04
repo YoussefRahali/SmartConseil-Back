@@ -60,7 +60,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
 		
 		<!-- Dépendances pour la manipulation des fichiers Excel -->
 		<dependency>
@@ -73,8 +72,6 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.3</version>
 		</dependency>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 	</dependencies>
 
 	<build>
@@ -83,11 +80,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-<<<<<<< HEAD
 					<source>17</source>
 					<target>17</target>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
