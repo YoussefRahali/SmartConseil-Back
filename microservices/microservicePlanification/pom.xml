@@ -136,8 +136,6 @@
 			<version>5.2.3</version>
 		</dependency>
 
-
-
 	</dependencies>
 
 	<build>
@@ -152,8 +150,6 @@
 				</configuration>
 			</plugin>
 			<plugin>
-=======
->>>>>>> 0139d5b706f6c8c817326e3af968b75daf29528b
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
