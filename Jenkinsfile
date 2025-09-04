@@ -1,7 +1,7 @@
 pipeline {
   agent any
   options { skipDefaultCheckout true; timestamps() }
-  tools { jdk 'jdk17'; maven 'mvn3' } // noms = ceux configurés dans Manage Jenkins > Global Tool Configuration
+  tools { jdk 'JAVA_HOME'; maven 'M2_HOME' } // noms = ceux configurés dans Manage Jenkins > Global Tool Configuration
   triggers { pollSCM('H/5 * * * *') } // ou webhook GitHub
 
   environment {
