@@ -9,6 +9,8 @@ pipeline {
     SONAR_HOST_URL = '' // ex: 'http://<ip-sonar>:9000'
     // OPTION artefacts (laisse vide si tu n'utilises pas Nexus maintenant)
     NEXUS_URL      = '' // ex: 'http://<ip-nexus>:8081/repository/maven-releases/'
+    MAVEN_OPTS = '-Dfile.encoding=UTF-8'
+
   }
 
   stages {
