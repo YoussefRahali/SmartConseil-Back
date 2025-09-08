@@ -77,5 +77,8 @@ pipeline {
       junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
 
-    
-::contentReference[oaicite:0]{index=0}
+      // Repart d’un workspace propre pour le prochain run
+      deleteDir()
+    }
+  }
+}
