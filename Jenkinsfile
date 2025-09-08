@@ -1,68 +1,97 @@
 pipeline {
   agent any
-  options { skipDefaultCheckout true; timestamps() }
-  tools { jdk 'JAVA_HOME'; maven 'M2_HOME' } // noms = ceux configurés dans Manage Jenkins > Global Tool Configuration
-  triggers { pollSCM('H/5 * * * *') } // ou webhook GitHub
 
+  options {
+    timestamps()
+    ansiColor('xterm')
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  // Active le profil Spring "test" pour les @SpringBootTest (application-test.properties)
   environment {
-    // OPTION qualité (laisse vide si tu n'utilises pas Sonar maintenant)
-    SONAR_HOST_URL = '' // ex: 'http://<ip-sonar>:9000'
-    // OPTION artefacts (laisse vide si tu n'utilises pas Nexus maintenant)
-    NEXUS_URL      = '' // ex: 'http://<ip-nexus>:8081/repository/maven-releases/'
-    MAVEN_OPTS = '-Dfile.encoding=UTF-8'
-
+    SPRING_PROFILES_ACTIVE = 'test'
+    // Optionnel: si vous avez besoin de MAVEN_OPTS globaux
+    MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
   }
 
   stages {
-    stage('Checkout') {
+
+    stage('Prepare workspace (clean)') {
       steps {
-        git branch: 'main', url: 'https://github.com/YoussefRahali/SmartConseil-Back.git'
+        script {
+          // Nettoyage robuste du workspace (avec fallback si cleanWs() n’est pas dispo)
+          try {
+            cleanWs(deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
+          } catch (ignored) {
+            echo 'cleanWs() indisponible — utilisation de deleteDir()'
+            deleteDir()
+          }
+        }
       }
     }
 
-    stage('Build & Test') {
+    stage('Checkout') {
       steps {
-        sh 'mvn -U -B clean verify'   // compile + tests
+        checkout scm
+      }
+    }
+
+    stage('Build & Test (profile=test)') {
+      steps {
+        sh '''
+          echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
+          # -Ptest est inoffensif s’il n’existe pas dans votre POM (Maven continue).
+          mvn -B -U -V \
+            -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+            -Ptest \
+            clean verify
+        '''
       }
     }
 
     stage('SonarQube') {
-      when { expression { return env.SONAR_HOST_URL?.trim() } }
+      when {
+        // Exécute Sonar uniquement si le build a réussi
+        expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
+      }
       steps {
-        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+        // Remplacez 'SonarQube' par le nom de votre serveur Sonar configuré dans Jenkins
+        withSonarQubeEnv('SonarQube') {
           sh '''
-            mvn -B sonar:sonar \
-              -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN
+            mvn -B -DskipTests=true \
+              -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+              sonar:sonar
           '''
         }
       }
     }
 
     stage('Publish to Nexus') {
-      when { expression { return env.NEXUS_URL?.trim() } }
+      when {
+        // Publie uniquement sur la branche main
+        branch 'main'
+      }
       steps {
-        withCredentials([usernamePassword(credentialsId: 'NEXUS_CRED', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-          sh '''
-            mkdir -p ~/.m2
-            cat > ~/.m2/settings.xml <<'EOF'
-            <settings><servers><server>
-              <id>deploymentRepo</id>
-              <username>${NEXUS_USER}</username>
-              <password>${NEXUS_PASS}</password>
-            </server></servers></settings>
-EOF
-            mvn -B -DskipTests deploy
-          '''
-        }
+        sh '''
+          mvn -B -DskipTests=true \
+            -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+            deploy
+        '''
       }
     }
   }
 
   post {
     always {
-      // multi-modules safe: archive tous les jars buildés
-      archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+      // Rapports de tests même en cas d’échec (pour voir les erreurs Surefire)
+      junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+
+      // Archive des artefacts si présents
+      archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
+
+      // Repart d’un workspace propre pour le prochain run
+      cleanWs(deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
     }
   }
 }
