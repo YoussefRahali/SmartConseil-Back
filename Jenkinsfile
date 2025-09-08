@@ -1,6 +1,13 @@
 pipeline {
   agent any
 
+  // Si, dans "Global Tool Configuration", tu as nommé le JDK "JAVA_HOME" et Maven "Maven",
+  // Jenkins mettra automatiquement le bon JAVA_HOME/PATH et mvn dans le PATH.
+  tools {
+    jdk   'JAVA_HOME'      // nom exact que tu as mis côté Jenkins (voir capture)
+    maven 'Maven'          // adapte si tu l'as nommé autrement
+  }
+
   options {
     timestamps()
     disableConcurrentBuilds()
@@ -8,34 +15,34 @@ pipeline {
     skipDefaultCheckout(true)
   }
 
-  // On force le JDK 17 système et on le met en tête du PATH
   environment {
+    // Sécurise aussi au cas où : on force le JDK 17 de ta VM
     JAVA_HOME = '/usr/lib/jvm/default-java'
-    PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    PATH = "${JAVA_HOME}/bin:${PATH}"
 
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
+
+    // ---- Docker (optionnel) ----
+    // Pour Docker Hub : DOCKER_REGISTRY='docker.io' et DOCKER_NAMESPACE='<ton-username>'
+    DOCKER_REGISTRY   = 'docker.io'           // à adapter si registre privé
+    DOCKER_NAMESPACE  = 'mon-espace'          // ex: ton username DockerHub
   }
 
   stages {
     stage('Prepare workspace (clean)') {
-      steps {
-        deleteDir()
-      }
+      steps { deleteDir() }
     }
 
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
-    stage('Build & Test (profile=test)') {
+    stage('Build & Test') {
       steps {
         sh '''
-          echo "=== Using Java at: $JAVA_HOME ==="
+          set -eux
           echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
-
           mvn -B -U -V \
             -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
             clean verify
@@ -44,12 +51,11 @@ pipeline {
     }
 
     stage('SonarQube') {
-      when {
-        expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
-      }
+      when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
       steps {
-        withSonarQubeEnv('SonarQube') {
+        withSonarQubeEnv('SonarQube') {           // nom du serveur Sonar déclaré dans Jenkins
           sh '''
+            set -eux
             mvn -B -DskipTests=true \
               -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
               sonar:sonar
@@ -58,10 +64,20 @@ pipeline {
       }
     }
 
+    stage('Quality Gate') {
+      when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true   // stoppe le build si la gate est KO
+        }
+      }
+    }
+
     stage('Publish to Nexus') {
       when { branch 'main' }
       steps {
         sh '''
+          set -eux
           mvn -B -DskipTests=true \
             -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
             deploy
@@ -69,24 +85,31 @@ pipeline {
       }
     }
 
-    // --- (Optionnel) Docker : dé-commente si prêt à builder/pusher ---
-    // stage('Docker build & push') {
-    //   when { branch 'main' }
-    //   environment {
-    //     REGISTRY_CRED = 'docker-registry-cred'   // ID des Credentials Jenkins
-    //     IMAGE_NAME    = 'monorg/microservice-conseil' // adapte le nom
-    //   }
-    //   steps {
-    //     sh 'docker version'
-    //     script {
-    //       docker.withRegistry('', REGISTRY_CRED) {
-    //         def img = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
-    //         img.push()
-    //         img.push('latest')
-    //       }
-    //     }
-    //   }
-    // }
+    stage('Docker build & push (optionnel)') {
+      when { branch 'main' }
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'docker-registry-cred',
+          usernameVariable: 'REG_USER',
+          passwordVariable: 'REG_PASS'
+        )]) {
+          sh '''
+            set -eux
+            echo "$REG_PASS" | docker login -u "$REG_USER" --password-stdin ${DOCKER_REGISTRY}
+
+            # microserviceConseil
+            docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microserviceconseil:${BUILD_NUMBER} \
+              -f microservices/microserviceConseil/Dockerfile .
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microserviceconseil:${BUILD_NUMBER}
+
+            # Rectification (adapte le chemin si besoin)
+            docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/rectification:${BUILD_NUMBER} \
+              -f microservices/rectification/Dockerfile .
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/rectification:${BUILD_NUMBER}
+          '''
+        }
+      }
+    }
   }
 
   post {
