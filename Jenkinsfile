@@ -8,16 +8,18 @@ pipeline {
     skipDefaultCheckout(true)
   }
 
+  // On force le JDK 17 système et on le met en tête du PATH
   environment {
+    JAVA_HOME = '/usr/lib/jvm/default-java'
+    PATH = "${JAVA_HOME}/bin:${env.PATH}"
+
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
   }
 
   stages {
-
     stage('Prepare workspace (clean)') {
       steps {
-        // Nettoyage complet du workspace avant de commencer
         deleteDir()
       }
     }
@@ -31,11 +33,11 @@ pipeline {
     stage('Build & Test (profile=test)') {
       steps {
         sh '''
+          echo "=== Using Java at: $JAVA_HOME ==="
           echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
-          # -Ptest est optionnel : s’il n’existe pas dans le POM, Maven continue quand même.
+
           mvn -B -U -V \
             -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
-            -Ptest \
             clean verify
         '''
       }
@@ -46,7 +48,6 @@ pipeline {
         expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
       }
       steps {
-        // Remplacer le nom ci-dessous par celui configuré dans Jenkins si différent
         withSonarQubeEnv('SonarQube') {
           sh '''
             mvn -B -DskipTests=true \
@@ -58,9 +59,7 @@ pipeline {
     }
 
     stage('Publish to Nexus') {
-      when {
-        branch 'main'
-      }
+      when { branch 'main' }
       steps {
         sh '''
           mvn -B -DskipTests=true \
@@ -69,15 +68,31 @@ pipeline {
         '''
       }
     }
+
+    // --- (Optionnel) Docker : dé-commente si prêt à builder/pusher ---
+    // stage('Docker build & push') {
+    //   when { branch 'main' }
+    //   environment {
+    //     REGISTRY_CRED = 'docker-registry-cred'   // ID des Credentials Jenkins
+    //     IMAGE_NAME    = 'monorg/microservice-conseil' // adapte le nom
+    //   }
+    //   steps {
+    //     sh 'docker version'
+    //     script {
+    //       docker.withRegistry('', REGISTRY_CRED) {
+    //         def img = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+    //         img.push()
+    //         img.push('latest')
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   post {
     always {
-      // Rapports de tests & artefacts même en cas d’échec
       junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
-
-      // Repart d’un workspace propre pour le prochain run
       deleteDir()
     }
   }
