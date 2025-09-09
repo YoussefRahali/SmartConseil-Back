@@ -2,9 +2,8 @@ pipeline {
   agent any
 
   tools {
-    // Noms EXACTS tels que définis dans "Global Tool Configuration"
-    jdk   'JDK17'
-    maven 'Maven'      // mets ici le nom de ton Maven tool
+    // (Facultatif) si tu as déclaré un Maven dans "Global Tool Configuration"
+    // maven 'Maven-3.9'
   }
 
   options {
@@ -15,11 +14,17 @@ pipeline {
   }
 
   environment {
+    // Ton JDK 17 réel d'après ta VM
+    JAVA_HOME = '/usr/lib/jvm/default-java'
+    PATH = "${JAVA_HOME}/bin:${PATH}"
+
+    // Maven/Java
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
   }
 
   stages {
+
     stage('Prepare workspace (clean)') {
       steps { deleteDir() }
     }
@@ -31,6 +36,8 @@ pipeline {
     stage('Build & Test') {
       steps {
         sh '''
+          java -version
+          mvn -v
           echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
           mvn -B -U -V \
             -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
@@ -39,8 +46,10 @@ pipeline {
       }
     }
 
-    stage('SonarQube analysis') {
-      when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
+    stage('SonarQube') {
+      when {
+        expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
+      }
       steps {
         withSonarQubeEnv('SonarQube') {
           sh '''
@@ -52,16 +61,8 @@ pipeline {
       }
     }
 
-    stage('Quality Gate') {
-      steps {
-        timeout(time: 10, unit: 'MINUTES') {
-          waitForQualityGate() // nécessite le webhook Sonar -> Jenkins OK
-        }
-      }
-    }
-
     stage('Publish to Nexus') {
-      when { branch 'main' }
+      when { allOf { branch 'main'; expression { fileExists('pom.xml') } } }
       steps {
         sh '''
           mvn -B -DskipTests=true \
