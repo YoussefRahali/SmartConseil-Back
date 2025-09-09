@@ -1,10 +1,6 @@
 pipeline {
   agent any
 
-  // ❌ pas de bloc "tools" pour éviter l'erreur "No tools specified"
-  // On suppose que Maven est déjà installé et accessible via "mvn".
-  // Si besoin, on peut forcer PATH plus bas.
-
   options {
     timestamps()
     disableConcurrentBuilds()
@@ -13,16 +9,8 @@ pipeline {
   }
 
   environment {
-    // JDK réel de ta VM (tu l’as confirmé)
-    JAVA_HOME = '/usr/lib/jvm/default-java'
-    PATH = "${JAVA_HOME}/bin:${PATH}"
-
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
-
-    // Optionnel si tu pushes sur Docker Hub :
-    // DOCKER_REGISTRY = 'docker.io'
-    // DOCKER_NAMESPACE = '<ton-user-dockerhub>'
   }
 
   stages {
@@ -37,9 +25,15 @@ pipeline {
     stage('Build & Test (profile=test)') {
       steps {
         sh '''
-          echo "=== Using JAVA_HOME: $JAVA_HOME ==="
-          echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
+          # --- Forcer JDK 17 pour l’utilisateur jenkins ---
+          # Adapte le chemin si différent : ls /usr/lib/jvm
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
+
+          echo "=== JAVA_HOME: $JAVA_HOME ==="
+          java -version
           mvn -v
+
           mvn -B -U -V -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} clean verify
         '''
       }
@@ -48,9 +42,10 @@ pipeline {
     stage('SonarQube') {
       when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
       steps {
-        // Le nom "SonarQube" doit correspondre à Manage Jenkins → System → SonarQube servers
         withSonarQubeEnv('SonarQube') {
           sh '''
+            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+            export PATH="$JAVA_HOME/bin:$PATH"
             mvn -B -DskipTests=true -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} sonar:sonar
           '''
         }
@@ -70,6 +65,8 @@ pipeline {
       when { branch 'main' }
       steps {
         sh '''
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
           mvn -B -DskipTests=true -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
         '''
       }
