@@ -19,7 +19,7 @@ pipeline {
 
     // Docker registry (à adapter si registre privé)
     DOCKER_REGISTRY = 'docker.io'
-    DOCKER_NAMESPACE = '<ton-username-dockerhub>'
+    DOCKER_NAMESPACE = '<youssef5025>'
   }
 
   stages {
