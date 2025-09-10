@@ -9,7 +9,7 @@ pipeline {
   }
 
   environment {
-    // JDK 17 exact sur ta VM
+    // JDK 17 de ta VM
     JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
 
@@ -17,9 +17,9 @@ pipeline {
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
 
-    // Docker registry (à adapter si registre privé)
-    DOCKER_REGISTRY = 'docker.io'
-    DOCKER_NAMESPACE = '<youssef5025>'
+    // Registre d'images (si Docker Hub : docker.io) + namespace (ton username Docker Hub)
+    DOCKER_REGISTRY  = 'docker.io'
+    DOCKER_NAMESPACE = 'youssef5025'   // <-- mets ton vrai username Docker Hub
   }
 
   stages {
@@ -35,15 +35,13 @@ pipeline {
     stage('Build & Test (profile=test)') {
       steps {
         sh '''
-          set -euxo pipefail
+          set -eu
           echo "=== JAVA_HOME: $JAVA_HOME ==="
           java -version
           mvn -v
 
           echo "=== Using Spring profile: ${SPRING_PROFILES_ACTIVE} ==="
-          mvn -B -U -V \
-            -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
-            clean verify
+          mvn -B -U -V -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} clean verify
         '''
       }
     }
@@ -51,10 +49,10 @@ pipeline {
     stage('SonarQube') {
       when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
       steps {
-        // Le nom "SonarQube" doit correspondre à ta config Jenkins > System > SonarQube servers
+        // Le libellé ci-dessous doit correspondre à Manage Jenkins > System > SonarQube servers
         withSonarQubeEnv('SonarQube') {
           sh '''
-            set -euxo pipefail
+            set -eu
             mvn -B -DskipTests \
               -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
               org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar
@@ -76,10 +74,8 @@ pipeline {
       when { branch 'main' }
       steps {
         sh '''
-          set -euxo pipefail
-          mvn -B -DskipTests \
-            -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
-            deploy
+          set -eu
+          mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
         '''
       }
     }
@@ -93,12 +89,11 @@ pipeline {
           passwordVariable: 'DOCKER_PASSWORD'
         )]) {
           sh '''
-            set -euxo pipefail
+            set -eu
 
-            # Tag de version court basé sur le commit
+            # Tag version basé sur le commit
             VERSION="$(git rev-parse --short HEAD)"
 
-            # Build des images
             echo "Docker build microserviceRectification..."
             docker build -f microservices/microserviceRectification/Dockerfile \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
@@ -114,8 +109,9 @@ pipeline {
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
 
-            # Login & push
+            echo "Docker login & push..."
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
+
             docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
             docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
 
@@ -132,11 +128,9 @@ pipeline {
 
   post {
     always {
-      // Rapports/tests et artefacts
       junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
 
-      // Diagnostic utile si ça casse coté tests Rapport
       script {
         if (currentBuild.currentResult == 'FAILURE') {
           sh '''
@@ -154,7 +148,6 @@ pipeline {
         }
       }
 
-      // Toujours repartir propre
       deleteDir()
     }
   }
