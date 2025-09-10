@@ -136,7 +136,7 @@ public class RectificationService {
      */
     public Rectification updateStatus(Long id, StatusUpdateDTO dto, String chefUsername) {
         Rectification r = repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rectification not found"));
+                .orElseThrow(() -> new RuntimeException("Rectification not foundd"));
 
         // Verify that the chef is authorized to update this rectification
         if (!r.getChefDepartementUsername().equals(chefUsername)) {
