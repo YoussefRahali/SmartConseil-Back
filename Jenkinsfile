@@ -9,17 +9,17 @@ pipeline {
   }
 
   environment {
-    // JDK 17 exact de ta VM
+    // JDK 17 exact sur ta VM
     JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
 
-    // Maven/Java options
+    // Maven/Java
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
 
-    // Si tu pousses des images (facultatif)
-    DOCKER_REGISTRY = 'docker.io'        // ou registre privé
-    DOCKER_NAMESPACE = 'ton-username'    // adapte si besoin
+    // Docker registry (à adapter si registre privé)
+    DOCKER_REGISTRY = 'docker.io'
+    DOCKER_NAMESPACE = '<ton-username-dockerhub>'
   }
 
   stages {
@@ -35,6 +35,7 @@ pipeline {
     stage('Build & Test (profile=test)') {
       steps {
         sh '''
+          set -euxo pipefail
           echo "=== JAVA_HOME: $JAVA_HOME ==="
           java -version
           mvn -v
@@ -48,24 +49,22 @@ pipeline {
     }
 
     stage('SonarQube') {
-      when {
-        expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
-      }
+      when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
       steps {
+        // Le nom "SonarQube" doit correspondre à ta config Jenkins > System > SonarQube servers
         withSonarQubeEnv('SonarQube') {
           sh '''
+            set -euxo pipefail
             mvn -B -DskipTests \
               -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
-              sonar:sonar
+              org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar
           '''
         }
       }
     }
 
     stage('Quality Gate') {
-      when {
-        expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
-      }
+      when { expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' } }
       steps {
         timeout(time: 10, unit: 'MINUTES') {
           waitForQualityGate abortPipeline: true
@@ -77,6 +76,7 @@ pipeline {
       when { branch 'main' }
       steps {
         sh '''
+          set -euxo pipefail
           mvn -B -DskipTests \
             -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
             deploy
@@ -84,40 +84,59 @@ pipeline {
       }
     }
 
-    // (Optionnel) Build & push Docker s’il y a des Dockerfile
     stage('Docker build & push (main)') {
       when { branch 'main' }
       steps {
-        sh '''
-          echo "Docker build microserviceRectification..."
-          docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest \
-            -f microservices/microserviceRectification/Dockerfile .
+        withCredentials([usernamePassword(
+          credentialsId: 'docker-registry-cred',
+          usernameVariable: 'DOCKER_USERNAME',
+          passwordVariable: 'DOCKER_PASSWORD'
+        )]) {
+          sh '''
+            set -euxo pipefail
 
-          echo "Docker build microserviceConseil..."
-          docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest \
-            -f microservices/microserviceConseil/Dockerfile .
+            # Tag de version court basé sur le commit
+            VERSION="$(git rev-parse --short HEAD)"
 
-          echo "Docker build microserviceRapport..."
-          docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest \
-            -f microservices/microserviceRapport/Dockerfile .
+            # Build des images
+            echo "Docker build microserviceRectification..."
+            docker build -f microservices/microserviceRectification/Dockerfile \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest .
 
-          echo "Docker login & push..."
-          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
-          docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
-          docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
-          docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
-        '''
+            echo "Docker build microserviceConseil..."
+            docker build -f microservices/microserviceConseil/Dockerfile \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION} \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest .
+
+            echo "Docker build microserviceRapport..."
+            docker build -f microservices/microserviceRapport/Dockerfile \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
+              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
+
+            # Login & push
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
+
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
+
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
+          '''
+        }
       }
     }
   }
 
   post {
     always {
-      // Rapports/tests et jars
+      // Rapports/tests et artefacts
       junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
 
-      // Aide au diagnostic si un test replante dans Jenkins
+      // Diagnostic utile si ça casse coté tests Rapport
       script {
         if (currentBuild.currentResult == 'FAILURE') {
           sh '''
@@ -135,6 +154,7 @@ pipeline {
         }
       }
 
+      // Toujours repartir propre
       deleteDir()
     }
   }
