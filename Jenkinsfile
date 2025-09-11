@@ -29,8 +29,18 @@ pipeline {
     }
 
     stage('Checkout') {
-      steps { checkout scm }
-    }
+  steps {
+    checkout([
+      $class: 'GitSCM',
+      branches: [[name: '*/main']],
+      userRemoteConfigs: [[
+        url: 'https://github.com/YoussefRahali/SmartConseil-Back.git',
+        credentialsId: 'github-cred'
+      ]]
+    ])
+  }
+}
+
 
     stage('Build & Test (profile=test)') {
       steps {
