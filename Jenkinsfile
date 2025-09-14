@@ -80,65 +80,68 @@ pipeline {
       }
     }
 
-    stage('Publish to Nexus') {
-      when { branch 'main' }
-      steps {
-        sh '''
-          set -eu
-          mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
-        '''
-      }
+    def isMain = {
+  // Essaye d'abord GIT_BRANCH (souvent 'origin/main')
+  def b = env.GIT_BRANCH ?: ''
+  if (b) {
+    return b == 'main' || b == 'origin/main' || b.endsWith('/main')
+  }
+  // Sinon demande à git (renvoie parfois '' ou 'HEAD' en detached)
+  def cur = sh(script: "git branch --show-current || true", returnStdout: true).trim()
+  return cur == 'main'
+}
+
+stage('Publish to Nexus') {
+  when { expression { isMain() } }
+  steps {
+    sh '''
+      set -eu
+      mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
+    '''
+  }
+}
+
+stage('Docker build & push') {
+  when { expression { isMain() } }
+  steps {
+    withCredentials([usernamePassword(
+      credentialsId: 'docker-registry-cred',
+      usernameVariable: 'DOCKER_USERNAME',
+      passwordVariable: 'DOCKER_PASSWORD'
+    )]) {
+      sh '''
+        set -eu
+        VERSION="$(git rev-parse --short HEAD)"
+        echo "Version: ${VERSION}"
+
+        echo "Build microserviceRectification..."
+        docker build -f microservices/microserviceRectification/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest .
+
+        echo "Build microserviceConseil..."
+        docker build -f microservices/microserviceConseil/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest .
+
+        echo "Build microserviceRapport..."
+        docker build -f microservices/microserviceRapport/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
+
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
+
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
+      '''
     }
+  }
+}
 
-    stage('Docker build & push') {
-      when {
-        expression {
-          sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim() == 'main'
-        }
-      }
-      steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'docker-registry-cred',
-          usernameVariable: 'DOCKER_USERNAME',
-          passwordVariable: 'DOCKER_PASSWORD'
-        )]) {
-          sh '''
-            set -eu
-
-            VERSION="$(git rev-parse --short HEAD)"
-            echo "Version: ${VERSION}"
-
-            # Build des 3 microservices
-            echo "Build microserviceRectification..."
-            docker build -f microservices/microserviceRectification/Dockerfile \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest .
-
-            echo "Build microserviceConseil..."
-            docker build -f microservices/microserviceConseil/Dockerfile \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION} \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest .
-
-            echo "Build microserviceRapport..."
-            docker build -f microservices/microserviceRapport/Dockerfile \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
-              -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
-
-            echo "Docker login & push..."
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
-
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
-
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
-
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
-          '''
-        }
-      }
-    }
 stage('Diag Docker on agent') {
   steps {
     sh '''
