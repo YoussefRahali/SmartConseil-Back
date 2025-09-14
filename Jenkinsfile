@@ -90,8 +90,12 @@ pipeline {
       }
     }
 
-    stage('Docker build & push (main)') {
-      when { branch 'main' }
+    stage('Docker build & push') {
+      when {
+        expression {
+          sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim() == 'main'
+        }
+      }
       steps {
         withCredentials([usernamePassword(
           credentialsId: 'docker-registry-cred',
@@ -101,20 +105,21 @@ pipeline {
           sh '''
             set -eu
 
-            # Tag version basé sur le commit
             VERSION="$(git rev-parse --short HEAD)"
+            echo "Version: ${VERSION}"
 
-            echo "Docker build microserviceRectification..."
+            # Build des 3 microservices
+            echo "Build microserviceRectification..."
             docker build -f microservices/microserviceRectification/Dockerfile \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest .
 
-            echo "Docker build microserviceConseil..."
+            echo "Build microserviceConseil..."
             docker build -f microservices/microserviceConseil/Dockerfile \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION} \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest .
 
-            echo "Docker build microserviceRapport..."
+            echo "Build microserviceRapport..."
             docker build -f microservices/microserviceRapport/Dockerfile \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
               -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
@@ -134,6 +139,18 @@ pipeline {
         }
       }
     }
+stage('Diag Docker on agent') {
+  steps {
+    sh '''
+      set -eux
+      docker version
+      docker info
+      id
+      groups
+    '''
+  }
+}
+
   }
 
   post {
