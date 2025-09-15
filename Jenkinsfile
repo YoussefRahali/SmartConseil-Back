@@ -110,10 +110,7 @@ pipeline {
 
     stage('Publish to Nexus') {
   when {
-    allOf {
-      branch 'main'                  // au lieu de env.ON_MAIN
-      expression { params.DEPLOY_TO_NEXUS }
-    }
+    expression { params.DEPLOY_TO_NEXUS }
   }
   steps {
     sh '''
@@ -125,10 +122,7 @@ pipeline {
 
 stage('Docker build & push') {
   when {
-    allOf {
-      branch 'main'                  // au lieu de env.ON_MAIN
-      expression { params.PUSH_DOCKER }
-    }
+       expression { params.DEPLOY_TO_NEXUS }
   }
   steps {
     withCredentials([usernamePassword(
