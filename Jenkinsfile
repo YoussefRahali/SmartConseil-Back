@@ -8,8 +8,13 @@ pipeline {
     skipDefaultCheckout(true)
   }
 
+  parameters {
+    booleanParam(name: 'DEPLOY_TO_NEXUS', defaultValue: false, description: 'Déployer sur Nexus')
+    booleanParam(name: 'PUSH_DOCKER',     defaultValue: true,  description: 'Construire & pousser les images Docker')
+  }
+
   environment {
-    // JDK 17 de la VM
+    // JDK 17
     JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
 
@@ -17,9 +22,12 @@ pipeline {
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
 
-    // Registre d'images (Docker Hub) + namespace (TON username Docker Hub)
+    // Docker Hub
     DOCKER_REGISTRY  = 'docker.io'
-    DOCKER_NAMESPACE = 'youssef5025'   // <-- mets ton vrai username Docker Hub si différent
+    DOCKER_NAMESPACE = 'youssef5025'
+
+    // Détection de branche (sera fixé dans le stage "Detect branch")
+    ON_MAIN = 'false'
   }
 
   stages {
@@ -38,7 +46,7 @@ pipeline {
             credentialsId: 'github-cred'
           ]],
           extensions: [
-            [$class: 'LocalBranch', localBranch: 'main'] // <- important: évite le HEAD détaché
+            [$class: 'LocalBranch', localBranch: 'main']
           ]
         ])
       }
@@ -51,6 +59,14 @@ pipeline {
           def mbBranch  = env.BRANCH_NAME ?: ''
           def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
           echo "DEBUG :: GIT_BRANCH='${envBranch}' BRANCH_NAME='${mbBranch}' CURRENT='${cur}'"
+
+          def isMain = (
+            mbBranch == 'main' ||
+            envBranch == 'main' || envBranch == 'origin/main' || envBranch.endsWith('/main') ||
+            cur == 'main'
+          )
+          env.ON_MAIN = isMain ? 'true' : 'false'
+          echo "ON_MAIN=${env.ON_MAIN}"
         }
       }
     }
@@ -93,37 +109,23 @@ pipeline {
     }
 
     stage('Publish to Nexus') {
-      when {
-        expression {
-          def envBranch = (env.GIT_BRANCH ?: '')
-          def mbBranch  = (env.BRANCH_NAME ?: '')
-          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
-          return ['main','origin/main'].contains(envBranch) ||
-                 envBranch.endsWith('/main') ||
-                 mbBranch == 'main' ||
-                 cur == 'main'
-        }
-      }
+      when { expression { params.DEPLOY_TO_NEXUS && env.ON_MAIN == 'true' } }
       steps {
-        sh '''
-          set -eu
-          mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
-        '''
+        script {
+          // NE BLOQUE PAS la pipeline si ça échoue
+          catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+            // Si tu utilises un settings.xml géré par Config File Provider, dé-commente :
+            // configFileProvider([configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+            //   sh 'mvn -B -s "$MAVEN_SETTINGS" -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy'
+            // }
+            sh 'mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy'
+          }
+        }
       }
     }
 
     stage('Docker build & push') {
-      when {
-        expression {
-          def envBranch = (env.GIT_BRANCH ?: '')
-          def mbBranch  = (env.BRANCH_NAME ?: '')
-          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
-          return ['main','origin/main'].contains(envBranch) ||
-                 envBranch.endsWith('/main') ||
-                 mbBranch == 'main' ||
-                 cur == 'main'
-        }
-      }
+      when { expression { params.PUSH_DOCKER && env.ON_MAIN == 'true' } }
       steps {
         withCredentials([usernamePassword(
           credentialsId: 'docker-registry-cred',
@@ -133,6 +135,11 @@ pipeline {
           sh '''
             set -eu
             export DOCKER_BUILDKIT=1
+
+            # Sanity check: Dockerfiles existent ?
+            test -f microservices/microserviceRectification/Dockerfile
+            test -f microservices/microserviceConseil/Dockerfile
+            test -f microservices/microserviceRapport/Dockerfile
 
             VERSION="$(git rev-parse --short HEAD)"
             echo "Version: ${VERSION}"
@@ -163,6 +170,9 @@ pipeline {
 
             docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION}
             docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
+
+            echo "Images locales construites :"
+            docker image ls | grep -E 'microservice-(rectification|conseil|rapport)' || true
           '''
         }
       }
@@ -185,24 +195,6 @@ pipeline {
     always {
       junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/*.jar,**/target/*.war'
-
-      script {
-        if (currentBuild.currentResult == 'FAILURE') {
-          sh '''
-            echo "=== DIAG: lister les rapports Surefire du module Rapport ==="
-            if [ -d microservices/microserviceRapport/target/surefire-reports ]; then
-              ls -lah microservices/microserviceRapport/target/surefire-reports || true
-              echo "=== Contenu des .txt (premières lignes) ==="
-              for f in microservices/microserviceRapport/target/surefire-reports/*.txt; do
-                echo "---- $f ----"; head -n 80 "$f" || true; echo;
-              done
-            else
-              echo "Pas de dossier surefire-reports pour microserviceRapport"
-            fi
-          '''
-        }
-      }
-
       deleteDir()
     }
   }
