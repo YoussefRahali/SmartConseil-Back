@@ -84,56 +84,56 @@ pipeline {
     }
 
     stage('Docker build & push') {
-      when { expression { params.PUSH_DOCKER } }
-      steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'docker-registry-cred',
-          usernameVariable: 'DOCKER_USERNAME',
-          passwordVariable: 'DOCKER_PASSWORD'
-        )]) {
-          sh '''
-            set -eu
-            export DOCKER_BUILDKIT=1
+  when { expression { params.PUSH_DOCKER } }
+  steps {
+    withCredentials([usernamePassword(
+      credentialsId: 'docker-registry-cred',
+      usernameVariable: 'DOCKER_USERNAME',
+      passwordVariable: 'DOCKER_PASSWORD'
+    )]) {
+      sh '''
+        set -eu
+        export DOCKER_BUILDKIT=1
+        COMMIT="$(git rev-parse --short HEAD)"
+        echo "Version: ${COMMIT}"
 
-            COMMIT="$(git rev-parse --short HEAD)"
-            echo "Version: ${COMMIT}"
+        # Rectification
+        echo "Build microserviceRectification..."
+        docker build \
+          -f microservices/microserviceRectification/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest \
+          .
 
-            # 1) Rectification
-            echo "Build microserviceRectification..."
-            docker build \
-              --file microservices/microserviceRectification/Dockerfile \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT} \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest \
-              microservices/microserviceRectification
+        # Conseil
+        echo "Build microserviceConseil..."
+        docker build \
+          -f microservices/microserviceConseil/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest \
+          .
 
-            # 2) Conseil
-            echo "Build microserviceConseil..."
-            docker build \
-              --file microservices/microserviceConseil/Dockerfile \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT} \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest \
-              microservices/microserviceConseil
+        # Rapport
+        echo "Build microserviceRapport..."
+        docker build \
+          -f microservices/microserviceRapport/Dockerfile \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT} \
+          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest \
+          .
 
-            # 3) Rapport
-            echo "Build microserviceRapport..."
-            docker build \
-              --file microservices/microserviceRapport/Dockerfile \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT} \
-              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest \
-              microservices/microserviceRapport
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
 
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
-
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT}
-            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
-          '''
-        }
-      }
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT}
+        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
+      '''
     }
+  }
+}
+
 
     stage('Diag Docker on agent') {
       steps {
