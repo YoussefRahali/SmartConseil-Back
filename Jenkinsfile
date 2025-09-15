@@ -122,7 +122,7 @@ pipeline {
 
 stage('Docker build & push') {
   when {
-       expression { params.DEPLOY_TO_NEXUS }
+       expression { params.PUSH_DOCKER }
   }
   steps {
     withCredentials([usernamePassword(
