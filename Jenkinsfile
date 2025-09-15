@@ -109,7 +109,9 @@ pipeline {
     }
 
     stage('Publish to Nexus') {
-  when { branch 'main' }  // plus simple
+  when {
+    expression { return params.DEPLOY_TO_NEXUS && env.ON_MAIN == 'true' }
+  }
   steps {
     sh '''
       set -eu
@@ -119,7 +121,9 @@ pipeline {
 }
 
 stage('Docker build & push') {
-  when { branch 'main' }  // idem
+  when {
+    expression { return params.PUSH_DOCKER && env.ON_MAIN == 'true' }
+  }
   steps {
     withCredentials([usernamePassword(
       credentialsId: 'docker-registry-cred',
@@ -129,7 +133,6 @@ stage('Docker build & push') {
       sh '''
         set -eu
         export DOCKER_BUILDKIT=1
-
         VERSION="$(git rev-parse --short HEAD)"
         echo "Version: ${VERSION}"
 
@@ -161,6 +164,7 @@ stage('Docker build & push') {
     }
   }
 }
+
 
 
     stage('Diag Docker on agent') {
