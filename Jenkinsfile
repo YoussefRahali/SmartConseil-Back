@@ -110,7 +110,10 @@ pipeline {
 
     stage('Publish to Nexus') {
   when {
-    expression { return params.DEPLOY_TO_NEXUS && env.ON_MAIN == 'true' }
+    allOf {
+      branch 'main'                  // au lieu de env.ON_MAIN
+      expression { params.DEPLOY_TO_NEXUS }
+    }
   }
   steps {
     sh '''
@@ -122,7 +125,10 @@ pipeline {
 
 stage('Docker build & push') {
   when {
-    expression { return params.PUSH_DOCKER && env.ON_MAIN == 'true' }
+    allOf {
+      branch 'main'                  // au lieu de env.ON_MAIN
+      expression { params.PUSH_DOCKER }
+    }
   }
   steps {
     withCredentials([usernamePassword(
@@ -151,7 +157,6 @@ stage('Docker build & push') {
           -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
           -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
 
-        echo "Docker login & push..."
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
 
         docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
@@ -164,6 +169,7 @@ stage('Docker build & push') {
     }
   }
 }
+
 
 
 
