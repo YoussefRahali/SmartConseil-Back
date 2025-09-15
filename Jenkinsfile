@@ -9,8 +9,7 @@ pipeline {
   }
 
   parameters {
-    booleanParam(name: 'DEPLOY_TO_NEXUS', defaultValue: false, description: 'Déployer sur Nexus')
-    booleanParam(name: 'PUSH_DOCKER',     defaultValue: true,  description: 'Construire & pousser les images Docker')
+    booleanParam(name: 'PUSH_DOCKER', defaultValue: true, description: 'Construire & pousser les images Docker')
   }
 
   environment {
@@ -25,9 +24,6 @@ pipeline {
     // Docker Hub
     DOCKER_REGISTRY  = 'docker.io'
     DOCKER_NAMESPACE = 'youssef5025'
-
-    // Détection de branche (sera fixé dans le stage "Detect branch")
-    ON_MAIN = 'false'
   }
 
   stages {
@@ -45,29 +41,8 @@ pipeline {
             url: 'https://github.com/YoussefRahali/SmartConseil-Back.git',
             credentialsId: 'github-cred'
           ]],
-          extensions: [
-            [$class: 'LocalBranch', localBranch: 'main']
-          ]
+          extensions: [[$class: 'LocalBranch', localBranch: 'main']]
         ])
-      }
-    }
-
-    stage('Detect branch') {
-      steps {
-        script {
-          def envBranch = env.GIT_BRANCH ?: ''
-          def mbBranch  = env.BRANCH_NAME ?: ''
-          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
-          echo "DEBUG :: GIT_BRANCH='${envBranch}' BRANCH_NAME='${mbBranch}' CURRENT='${cur}'"
-
-          def isMain = (
-            mbBranch == 'main' ||
-            envBranch == 'main' || envBranch == 'origin/main' || envBranch.endsWith('/main') ||
-            cur == 'main'
-          )
-          env.ON_MAIN = isMain ? 'true' : 'false'
-          echo "ON_MAIN=${env.ON_MAIN}"
-        }
       }
     }
 
@@ -108,54 +83,57 @@ pipeline {
       }
     }
 
-    
+    stage('Docker build & push') {
+      when { expression { params.PUSH_DOCKER } }
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'docker-registry-cred',
+          usernameVariable: 'DOCKER_USERNAME',
+          passwordVariable: 'DOCKER_PASSWORD'
+        )]) {
+          sh '''
+            set -eu
+            export DOCKER_BUILDKIT=1
 
-stage('Docker build & push') {
-  when {
-       expression { params.PUSH_DOCKER }
-  }
-  steps {
-    withCredentials([usernamePassword(
-      credentialsId: 'docker-registry-cred',
-      usernameVariable: 'DOCKER_USERNAME',
-      passwordVariable: 'DOCKER_PASSWORD'
-    )]) {
-      sh '''
-        set -eu
-        export DOCKER_BUILDKIT=1
-        VERSION="$(git rev-parse --short HEAD)"
-        echo "Version: ${VERSION}"
+            COMMIT="$(git rev-parse --short HEAD)"
+            echo "Version: ${COMMIT}"
 
-        echo "Build microserviceRectification..."
-        docker build -f microservices/microserviceRectification/Dockerfile \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION} \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest .
+            # 1) Rectification
+            echo "Build microserviceRectification..."
+            docker build \
+              --file microservices/microserviceRectification/Dockerfile \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT} \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest \
+              microservices/microserviceRectification
 
-        echo "Build microserviceConseil..."
-        docker build -f microservices/microserviceConseil/Dockerfile \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION} \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest .
+            # 2) Conseil
+            echo "Build microserviceConseil..."
+            docker build \
+              --file microservices/microserviceConseil/Dockerfile \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT} \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest \
+              microservices/microserviceConseil
 
-        echo "Build microserviceRapport..."
-        docker build -f microservices/microserviceRapport/Dockerfile \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION} \
-          -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest .
+            # 3) Rapport
+            echo "Build microserviceRapport..."
+            docker build \
+              --file microservices/microserviceRapport/Dockerfile \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT} \
+              --tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest \
+              microservices/microserviceRapport
 
-        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${DOCKER_REGISTRY}
 
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${VERSION}
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${VERSION}
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${VERSION}
-        docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
-      '''
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:${COMMIT}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rectification:latest
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:${COMMIT}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-conseil:latest
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:${COMMIT}
+            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/microservice-rapport:latest
+          '''
+        }
+      }
     }
-  }
-}
-
-
-
 
     stage('Diag Docker on agent') {
       steps {
