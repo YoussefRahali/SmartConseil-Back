@@ -17,9 +17,9 @@ pipeline {
     SPRING_PROFILES_ACTIVE = 'test'
     MAVEN_OPTS = '-Xmx2g -Duser.timezone=UTC'
 
-    // Registre d'images (si Docker Hub : docker.io) + namespace (ton username Docker Hub)
+    // Registre d'images (Docker Hub) + namespace (TON username Docker Hub)
     DOCKER_REGISTRY  = 'docker.io'
-    DOCKER_NAMESPACE = 'youssef5025'   // <-- mets ton vrai username Docker Hub
+    DOCKER_NAMESPACE = 'youssef5025'   // <-- mets ton vrai username Docker Hub si différent
   }
 
   stages {
@@ -36,8 +36,22 @@ pipeline {
           userRemoteConfigs: [[
             url: 'https://github.com/YoussefRahali/SmartConseil-Back.git',
             credentialsId: 'github-cred'
-          ]]
+          ]],
+          extensions: [
+            [$class: 'LocalBranch', localBranch: 'main'] // <- important: évite le HEAD détaché
+          ]
         ])
+      }
+    }
+
+    stage('Detect branch') {
+      steps {
+        script {
+          def envBranch = env.GIT_BRANCH ?: ''
+          def mbBranch  = env.BRANCH_NAME ?: ''
+          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
+          echo "DEBUG :: GIT_BRANCH='${envBranch}' BRANCH_NAME='${mbBranch}' CURRENT='${cur}'"
+        }
       }
     }
 
@@ -81,12 +95,12 @@ pipeline {
     stage('Publish to Nexus') {
       when {
         expression {
-          // Vrai si on est sur main (multibranch ou pipeline freestyle)
           def envBranch = (env.GIT_BRANCH ?: '')
           def mbBranch  = (env.BRANCH_NAME ?: '')
-          def cur = sh(script: "git branch --show-current || true", returnStdout: true).trim()
-          return mbBranch == 'main' ||
-                 envBranch == 'main' || envBranch == 'origin/main' || envBranch.endsWith('/main') ||
+          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
+          return ['main','origin/main'].contains(envBranch) ||
+                 envBranch.endsWith('/main') ||
+                 mbBranch == 'main' ||
                  cur == 'main'
         }
       }
@@ -103,9 +117,10 @@ pipeline {
         expression {
           def envBranch = (env.GIT_BRANCH ?: '')
           def mbBranch  = (env.BRANCH_NAME ?: '')
-          def cur = sh(script: "git branch --show-current || true", returnStdout: true).trim()
-          return mbBranch == 'main' ||
-                 envBranch == 'main' || envBranch == 'origin/main' || envBranch.endsWith('/main') ||
+          def cur = sh(script: "git rev-parse --abbrev-ref HEAD || true", returnStdout: true).trim()
+          return ['main','origin/main'].contains(envBranch) ||
+                 envBranch.endsWith('/main') ||
+                 mbBranch == 'main' ||
                  cur == 'main'
         }
       }
@@ -117,6 +132,7 @@ pipeline {
         )]) {
           sh '''
             set -eu
+            export DOCKER_BUILDKIT=1
 
             VERSION="$(git rev-parse --short HEAD)"
             echo "Version: ${VERSION}"
