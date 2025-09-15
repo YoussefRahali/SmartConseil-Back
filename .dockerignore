@@ -1,0 +1,13 @@
+# répertoires lourds/inutiles
+.git
+**/.git
+**/target
+**/build
+**/.idea
+**/.vscode
+**/.DS_Store
+**/node_modules
+
+# caches/wrappers
+.mvn/wrapper/maven-wrapper.jar
+**/*.iml
