@@ -108,17 +108,7 @@ pipeline {
       }
     }
 
-    stage('Publish to Nexus') {
-  when {
-    expression { params.DEPLOY_TO_NEXUS }
-  }
-  steps {
-    sh '''
-      set -eu
-      mvn -B -DskipTests -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} deploy
-    '''
-  }
-}
+    
 
 stage('Docker build & push') {
   when {
