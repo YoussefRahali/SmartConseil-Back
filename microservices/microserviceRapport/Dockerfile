@@ -1,14 +1,19 @@
+# syntax=docker/dockerfile:1.6
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
+
 COPY pom.xml .
 COPY microservices/microserviceRapport/pom.xml microservices/microserviceRapport/pom.xml
-RUN mvn -q -B -DskipTests dependency:go-offline
-COPY . .
-RUN mvn -q -B -DskipTests -pl microservices/microserviceRapport -am package
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -DskipTests -pl microservices/microserviceRapport -am dependency:go-offline
+
+COPY microservices/microserviceRapport microservices/microserviceRapport
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -DskipTests -pl microservices/microserviceRapport -am package
 
 FROM eclipse-temurin:17-jre
 WORKDIR /opt/app
-ARG JAR=microservices/microserviceRapport/target/*.jar
-COPY --from=build /app/${JAR} app.jar
+COPY --from=build /app/microservices/microserviceRapport/target/*.jar app.jar
 EXPOSE 8087
 ENTRYPOINT ["java","-jar","/opt/app/app.jar"]
